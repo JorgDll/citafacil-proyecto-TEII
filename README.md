@@ -13,7 +13,7 @@ Backend en **Python (FastAPI)** con base de datos **SQL**, API REST **documentad
 - **Reserva en 3 pasos**: el cliente elige servicio → día → hora libre, y deja su nombre y celular.
 - **Sin choques de horario**: el motor de disponibilidad calcula los espacios libres según la duración de cada servicio y **evita el doble-booking**.
 - **Recordatorios por WhatsApp**: envío automático (programado) X horas antes de la cita, además de confirmación al reservar.
-- **Panel de administración**: estadísticas, gestión de reservas (confirmar / cancelar / realizar / eliminar) y de servicios (crear / activar / eliminar), protegido por token.
+- **Panel de administración**: estadísticas, gestión de reservas (confirmar / cancelar / realizar / eliminar) y de servicios (crear / activar / eliminar), con cuentas individuales, permisos por rol y registro de actividad.
 - **API REST documentada**: Swagger UI interactivo en `/docs`.
 - **Validación de datos**: celulares de cualquier país en formato E.164 (solo móviles, porque los recordatorios van por WhatsApp), con selector de país con búsqueda; horarios de atención y días cerrados configurables.
 - **Listo para desplegar**: Dockerfile, blueprint de Render y configuración por variables de entorno (SQLite en local → PostgreSQL en producción).
@@ -51,22 +51,33 @@ citafacil/
 │   │   ├── main.py           # App FastAPI, CORS, programador de recordatorios
 │   │   ├── config.py         # Configuración por variables de entorno
 │   │   ├── database.py       # Conexión SQLAlchemy (SQLite/PostgreSQL)
-│   │   ├── models.py         # Modelos: Service, Appointment
+│   │   ├── models.py         # Modelos: servicios, citas, dispositivos, enlaces, cuentas, sesiones, auditoría
 │   │   ├── schemas.py        # Esquemas Pydantic (validación)
 │   │   ├── crud.py           # Operaciones de base de datos
-│   │   ├── availability.py   # Motor de horarios + anti doble-booking
+│   │   ├── availability.py   # Motor de horarios + anti doble-booking (calendario, franjas, candado)
+│   │   ├── analytics.py      # Histórico y proyección de demanda (HU-3)
+│   │   ├── device.py         # Dispositivo recordado (HU-1)
+│   │   ├── manage.py         # Autogestión de la cita por enlace (HU-5)
 │   │   ├── notifications.py  # Envío de WhatsApp (Twilio)
 │   │   ├── reminders.py      # Recordatorios automáticos
-│   │   ├── auth.py           # Autenticación del panel admin
-│   │   └── routers/          # Endpoints (público / admin)
-│   ├── tests/                # Pruebas con pytest
+│   │   ├── auth.py           # Contraseñas, sesiones y permisos del panel (HU-6)
+│   │   ├── permissions.py    # Catálogo de permisos y roles base (HU-6)
+│   │   ├── audit.py          # Registro de actividad (HU-6)
+│   │   └── routers/          # Endpoints (público, admin, análisis, dispositivo, autogestión, cuentas, auditoría)
+│   ├── tests/                # Pruebas con pytest (33)
 │   ├── seed.py               # Datos de ejemplo (barbería)
+│   ├── seed_history.py       # Histórico de citas para los gráficos
+│   ├── manage_users.py       # Gestión de cuentas por línea de comandos
 │   ├── requirements.txt
 │   ├── Dockerfile
 │   └── .env.example
 ├── frontend/
 │   ├── index.html            # Página pública de reservas
-│   └── admin.html            # Panel de administración
+│   ├── manage.html           # Autogestión de la cita (enlace personal)
+│   ├── scheduler.js / .css   # Calendario y franjas compartidos
+│   ├── admin.html            # Panel de administración
+│   └── admin-staff.js        # Usuarios, permisos y actividad del panel
+├── docs/                     # Documentación (Proyect-doc.md, historias de usuario, QA, AI Log)
 ├── render.yaml               # Despliegue en Render (API + PostgreSQL)
 └── README.md
 ```
@@ -228,7 +239,7 @@ cd backend
 python -m pytest
 ```
 
-Cubren la validación de teléfono, el cálculo de disponibilidad, la prevención de doble-booking y la autenticación del panel.
+33 tests: validación de teléfono, disponibilidad, doble reserva (incluida la concurrente), dispositivo recordado, calendario, análisis de demanda, autogestión, cuentas y permisos, y las regresiones de QA.
 
 ---
 
