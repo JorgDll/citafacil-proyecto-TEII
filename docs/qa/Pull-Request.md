@@ -53,7 +53,8 @@ uvicorn app.main:app --reload       # http://localhost:8000/app/
 - [x] Sin secretos en el repo (`.env` ignorado; `ADMIN_TOKEN` por defecto rechazado)
 - [x] AI Development Log con respuestas incorrectas, cambios rechazados y decisiones humanas (`docs/AI-Development-Log.md`)
 - [x] Evidencia de las pruebas y capturas de la sesión de IA (`docs/qa/evidencia/`)
-- [ ] Verificación visual pendiente (`Reporte-QA.md` §8): XSS de QA-03 en el navegador, enlace del recordatorio y vista móvil
+- [x] Verificación visual en el navegador (`docs/review/Revision-Reviewer.md` §2): 14 de 15 comprobaciones pasan; R-02 (desborde en móvil, ya existía) queda a decisión del reviewer
+- [ ] Decisión y aprobación del reviewer (`docs/review/Revision-Reviewer.md` §4)
 
 ## Riesgos conocidos (no bloquean)
 
