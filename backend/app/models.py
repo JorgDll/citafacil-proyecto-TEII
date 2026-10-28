@@ -47,3 +47,20 @@ class Appointment(Base):
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
     service = relationship("Service", back_populates="appointments")
+
+
+class DeviceProfile(Base):
+    """Datos de un cliente recordados en UN dispositivo (HU-1).
+
+    Solo se guarda el SHA-256 del token; el token en claro vive únicamente en la
+    cookie HttpOnly del navegador. Cada dispositivo tiene su propia fila.
+    """
+
+    __tablename__ = "device_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    token_hash = Column(String(64), nullable=False, unique=True, index=True)
+    customer_name = Column(String(120), nullable=False)
+    customer_phone = Column(String(20), nullable=False)   # E.164
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    last_used_at = Column(DateTime, nullable=False, default=datetime.utcnow)

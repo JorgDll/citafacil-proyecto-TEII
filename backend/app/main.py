@@ -3,17 +3,19 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from . import __version__
 from .config import settings
 from .database import Base, engine
 from .reminders import run_reminders_job
-from .routers import admin, public, scores
+from .routers import admin, device, public, scores
 
 logging.basicConfig(
     level=logging.INFO,
@@ -71,6 +73,13 @@ app.add_middleware(
 app.include_router(public.router)
 app.include_router(admin.router)
 app.include_router(scores.router)
+app.include_router(device.router)
+
+# Frontend servido desde el mismo origen que la API (necesario para la cookie
+# HttpOnly del dispositivo recordado). Abrir: http://localhost:8000/app/
+_FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
+if _FRONTEND_DIR.is_dir():
+    app.mount("/app", StaticFiles(directory=_FRONTEND_DIR, html=True), name="frontend")
 
 
 @app.get("/", include_in_schema=False)

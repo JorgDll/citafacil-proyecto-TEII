@@ -82,6 +82,14 @@ citafacil/
 | GET | `/stats` | Contadores por estado y próximas |
 | POST | `/reminders/run` | Ejecutar recordatorios ahora |
 
+### Dispositivo recordado (`/api/device`, HU-1, autenticado por cookie HttpOnly)
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/profile` | Datos guardados; `{known:false}` si la cookie falta o no es válida |
+| POST | `/remember` | Crea token + perfil (201). Si el dispositivo ya es conocido: 200 `already_known`, sin tocar token ni datos |
+| PUT | `/profile` | Actualiza nombre/celular (401 sin cookie válida) |
+| DELETE | `` | Olvida el dispositivo y borra la cookie |
+
 ### Ranking (sin autenticación)
 `POST /api/scores`, `GET /api/scores/top?limit=` (1–50).
 
@@ -92,6 +100,7 @@ citafacil/
 
 - **services**: `id`, `name`, `duration_min`, `price` (CLP entero), `active`.
 - **appointments**: `id`, `customer_name`, `customer_phone` (E.164), `service_id` (FK), `start_at` / `end_at` (sin zona, hora local del negocio), `status`, `notes`, `reminder_sent`, `created_at` (UTC sin zona).
+- **device_profiles** (HU-1): `id`, `token_hash` (SHA-256 hex, único), `customer_name`, `customer_phone`, `created_at`, `last_used_at`. Una fila por dispositivo; el token en claro solo existe en la cookie `citafacil_device`.
 - **game_scores**: `id`, `name` (≤20), `round`, `score` (indexado), `created_at` (UTC con zona).
 
 `seed.py` carga 5 servicios y 2 citas confirmadas de ejemplo (solo si las tablas están vacías).
@@ -103,7 +112,9 @@ citafacil/
 **Recordatorios.** Cada `REMINDER_POLL_MINUTES` (15) el programador busca citas `pending` o `confirmed`, con `reminder_sent=False`, que empiecen dentro de las próximas `REMINDER_HOURS_BEFORE` (24) horas. Envía y marca `reminder_sent` solo si el envío fue exitoso.
 
 **Frontend.**
-- URL de la API: `?api=` → `localStorage.citafacil_api` → `https://citafacil-api.onrender.com`.
+- Se sirve desde FastAPI en `http://localhost:8000/app/` (mismo origen que la API).
+- URL de la API: `?api=` → `localStorage.citafacil_api` → origen actual (o Render si se abre por `file://`).
+- HU-1: al cargar, `GET /api/device/profile` prellena nombre y celular; tras reservar, un modal ofrece guardar (dispositivo nuevo) o actualizar (datos distintos) los datos.
 - `index.html`: asistente de 3 pasos.
 - `admin.html`: login con token (`localStorage.citafacil_token`), estadísticas, citas (filtros; confirmar, cancelar, realizada, eliminar), servicios (crear, activar, eliminar) y botón de recordatorios.
 
@@ -121,6 +132,8 @@ citafacil/
 | `REMINDER_HOURS_BEFORE` / `REMINDER_POLL_MINUTES` | 24 / 15 |
 
 ## 9. Tests
+
+`backend/tests/conftest.py` fija la BD temporal (portable a Windows) y la fixture `fresh_db`. `backend/tests/test_device_profile.py` (3 tests, HU-1): camino feliz, varios dispositivos sin sobreescribir token, y token inválido/olvidado.
 
 `backend/tests/test_booking.py` (6 tests): formatos de teléfono válidos e inválidos, creación y conflicto 409, disponibilidad que excluye horas reservadas, rechazo de teléfono inválido (422) y autenticación admin.
 

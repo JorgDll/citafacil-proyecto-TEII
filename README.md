@@ -88,8 +88,8 @@ python -m uvicorn app.main:app --reload
 ```
 
 - API y documentación: <http://localhost:8000/docs>
-- Frontend: abre `frontend/index.html` en el navegador (usa `http://localhost:8000` por defecto).
-  Panel admin en `frontend/admin.html` (ingresa tu `ADMIN_TOKEN`).
+- Frontend: <http://localhost:8000/app/> (servido por la API; así funciona la cookie del dispositivo recordado).
+  Panel admin en <http://localhost:8000/app/admin.html> (ingresa tu `ADMIN_TOKEN`).
 
 > Sin credenciales de Twilio, la app corre en **modo demo**: los mensajes de WhatsApp se registran en el log en vez de enviarse.
 
@@ -111,6 +111,17 @@ python -m uvicorn app.main:app --reload
 | POST | `/api/admin/reminders/run` | Enviar recordatorios ahora | 🔒 |
 
 🔒 = requiere la cabecera `X-Admin-Token`.
+
+**Dispositivo recordado (HU-1)** — reservar sin volver a escribir tus datos, sin login. Se autentica con una cookie HttpOnly; el servidor guarda solo el SHA-256 del token.
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET  | `/api/device/profile` | Datos guardados de este dispositivo (`known:false` si no se reconoce) |
+| POST | `/api/device/remember` | Guarda los datos y emite el token (si el dispositivo ya es conocido, no lo reemplaza) |
+| PUT  | `/api/device/profile` | Actualiza los datos guardados (requiere cookie válida) |
+| DELETE | `/api/device` | Olvida este dispositivo |
+
+El frontend ahora se sirve desde la propia API (mismo origen, necesario para la cookie): abre <http://localhost:8000/app/>.
 
 ---
 

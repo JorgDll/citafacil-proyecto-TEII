@@ -90,6 +90,19 @@
   .msg{border-radius:10px;padding:11px 14px;font-size:.9rem;margin-top:12px;display:none}
   .msg.err{display:block;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);color:#fecaca}
 
+  .known{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:rgba(34,197,94,.1);
+    border:1px solid rgba(34,197,94,.3);color:#bbf7d0;border-radius:10px;padding:10px 14px;font-size:.88rem;margin-bottom:16px}
+  .known a{color:var(--accent-2);font-weight:600;cursor:pointer}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:none;align-items:center;
+    justify-content:center;padding:20px;z-index:50}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;max-width:420px;width:100%;
+    box-shadow:var(--shadow);text-align:center}
+  .modal .ic{font-size:2.6rem;color:var(--ok);margin-bottom:10px}
+  .modal h3{font-size:1.2rem;margin-bottom:8px}
+  .modal p{color:var(--muted);font-size:.93rem;margin-bottom:20px}
+  .modal .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
   footer{border-top:1px solid var(--border);padding:22px 0;text-align:center;color:var(--muted);font-size:.85rem}
   footer a{color:var(--accent-2);font-weight:600;cursor:pointer}
   .spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;flex:0 0 auto}
@@ -143,6 +156,10 @@
       <h2><i class="fa-solid fa-user"></i> Tus datos</h2>
       <p class="hint">Para confirmarte la reserva por WhatsApp.</p>
       <div class="summary" id="summary"></div>
+      <div class="known" id="knownBanner" style="display:none">
+        <span><i class="fa-solid fa-circle-user"></i> Usando los datos guardados en este dispositivo.</span>
+        <a id="useOther">Usar otros datos</a>
+      </div>
       <div class="field"><label for="name">Nombre y apellido</label><input id="name" placeholder="Ej: Camila Rojas" autocomplete="name" /></div>
       <div class="field"><label for="phone">Celular (WhatsApp)</label><input id="phone" placeholder="+56 9 XXXX XXXX" inputmode="tel" autocomplete="tel" /></div>
       <div class="field"><label for="notes">Nota (opcional)</label><input id="notes" placeholder="Algo que debamos saber" /></div>
@@ -162,6 +179,19 @@
   </div>
 </main>
 
+<div class="modal-bg" id="rememberModal" role="dialog" aria-modal="true" aria-labelledby="rmTitle">
+  <div class="modal">
+    <div class="ic"><i class="fa-solid fa-circle-check"></i></div>
+    <h3 id="rmTitle"></h3>
+    <p id="rmText"></p>
+    <div class="actions">
+      <button class="btn" id="rmYes"><i class="fa-solid fa-floppy-disk"></i> <span id="rmYesLbl">Sí, guardar</span></button>
+      <button class="btn ghost" id="rmNo">No, gracias</button>
+    </div>
+    <div class="msg" id="rmMsg"></div>
+  </div>
+</div>
+
 <footer>
   <div class="wrap">
     Hecho con CitaFácil · <a onclick="configApi()">Configurar API</a> ·
@@ -173,7 +203,8 @@
   /* ====== CONFIG ====== */
   // Cambia esta URL por la de tu backend en producción (Render).
   // También puedes pasar ?api=https://tu-api.onrender.com en la URL.
-  const DEFAULT_API = "https://citafacil-api.onrender.com";
+  // Servido por FastAPI (http://localhost:8000/app/) la API es el mismo origen.
+  const DEFAULT_API = location.protocol.startsWith("http") ? location.origin : "https://citafacil-api.onrender.com";
   const qp = new URLSearchParams(location.search).get("api");
   if (qp) localStorage.setItem("citafacil_api", qp);
   const API = (localStorage.getItem("citafacil_api") || DEFAULT_API).replace(/\/$/, "");
@@ -191,13 +222,13 @@
     const ctrl = new AbortController();
     const t = timeoutMs ? setTimeout(()=>ctrl.abort(), timeoutMs) : null;
     try{
-      const r = await fetch(API + path, Object.assign({}, opts||{}, {signal: ctrl.signal}));
+      const r = await fetch(API + path, Object.assign({credentials:"same-origin"}, opts||{}, {signal: ctrl.signal}));
       if(!r.ok){ let d; try{d=await r.json()}catch(e){}; throw new Error((d&&d.detail) || ("Error "+r.status)); }
       return r.status===204 ? null : r.json();
     } finally { if(t) clearTimeout(t); }
   }
 
-  const state = { service:null, date:null, time:null, services:[] };
+  const state = { service:null, date:null, time:null, services:[], device:null };
   const $ = id => document.getElementById(id);
 
   function setStep(n){
@@ -250,8 +281,62 @@
       }
     }catch(e){ /* usa defaults */ }
 
+    loadDevice();
+
     // fecha mínima = hoy
     $("dateInput").min = new Date().toISOString().slice(0,10);
+  }
+
+  /* ====== Dispositivo recordado (HU-1) ====== */
+  // Prellena nombre/celular si la cookie HttpOnly de este dispositivo es válida.
+  async function loadDevice(){
+    try{
+      const p = await api("/api/device/profile", null, 15000);
+      if(p && p.known){
+        state.device = p;
+        $("name").value = p.customer_name;
+        $("phone").value = p.customer_phone;
+        $("knownBanner").style.display = "flex";
+      }
+    }catch(e){ /* sin prellenado: formulario normal */ }
+  }
+
+  $("useOther").addEventListener("click", ()=>{
+    $("name").value = ""; $("phone").value = "";
+    $("knownBanner").style.display = "none";
+    $("name").focus();
+  });
+
+  // Modal tras reservar. Resuelve cuando el usuario elige o falla el guardado.
+  function askRemember(appt){
+    const dev = state.device;
+    let mode = null;                       // "save" | "update"
+    if(!dev) mode = "save";
+    else if(dev.customer_name !== appt.customer_name || dev.customer_phone !== appt.customer_phone) mode = "update";
+    if(!mode) return;
+
+    $("rmTitle").textContent = mode==="save" ? "¡Reserva realizada con éxito!" : "¡Reserva realizada!";
+    $("rmText").textContent = mode==="save"
+      ? "¿Quieres guardar tus datos en este dispositivo para reservar más rápido la próxima vez?"
+      : "Usaste datos distintos a los guardados en este dispositivo. ¿Quieres actualizarlos?";
+    $("rmYesLbl").textContent = mode==="save" ? "Sí, guardar" : "Sí, actualizar";
+    $("rmMsg").className = "msg";
+    const modal = $("rememberModal"), yes = $("rmYes");
+    const close = ()=>{ modal.classList.remove("open"); yes.onclick = $("rmNo").onclick = null; };
+    $("rmNo").onclick = close;
+    yes.onclick = async ()=>{
+      yes.disabled = true;
+      const body = JSON.stringify({customer_name: appt.customer_name, customer_phone: appt.customer_phone});
+      try{
+        await api(mode==="save" ? "/api/device/remember" : "/api/device/profile",
+          {method: mode==="save" ? "POST" : "PUT", headers:{"Content-Type":"application/json"}, body}, 15000);
+        close();
+      }catch(e){
+        $("rmMsg").className = "msg err"; $("rmMsg").textContent = "No se pudo guardar: " + e.message;
+      }finally{ yes.disabled = false; }
+    };
+    modal.classList.add("open");
+    yes.focus();
   }
 
   function renderServices(){
@@ -336,7 +421,7 @@
     try{
       const payload={customer_name:name, customer_phone:phone, service_id:state.service.id,
         start_at:`${state.date}T${state.time}:00`, notes:$("notes").value.trim()};
-      await api("/api/appointments",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}, 65000);
+      const appt = await api("/api/appointments",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}, 65000);
       const d=new Date(state.date+"T"+state.time);
       const fecha=d.toLocaleDateString("es-CL",{weekday:"long",day:"2-digit",month:"long"});
       $("doneMsg").innerHTML=`Te esperamos el <b>${fecha}</b> a las <b>${state.time}</b>.<br>Te enviamos la confirmación por WhatsApp a ${phone}.`;
@@ -344,6 +429,7 @@
       document.querySelector(".steps").style.display="none";
       $("cardDone").style.display="block";
       $("cardDone").scrollIntoView({behavior:"smooth",block:"center"});
+      askRemember(appt);
     }catch(e){
       msg.className="msg err";
       msg.textContent = e.message==="Error 409" ? "Ese horario ya fue tomado. Elige otro." : e.message;

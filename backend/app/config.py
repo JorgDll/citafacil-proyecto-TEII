@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     admin_token: str = "cambia-este-token-admin"
     cors_origins: str = "*"      # separado por comas, o "*" para todos
 
+    # --- Dispositivo recordado (cookie HttpOnly) ---
+    device_cookie_name: str = "citafacil_device"
+    device_cookie_days: int = 365
+    cookie_secure: bool = False   # true solo si se sirve por HTTPS
+
     # --- Twilio / WhatsApp ---
     twilio_account_sid: str = ""
     twilio_auth_token: str = ""

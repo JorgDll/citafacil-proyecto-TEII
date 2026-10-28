@@ -1,34 +1,14 @@
 """Tests de la lógica de reservas y de la API."""
-import os
+# La BD de prueba y la fixture `fresh_db` viven en conftest.py.
+from datetime import timedelta
 
-# Usar una base de datos de prueba aislada ANTES de importar la app.
-# (Se usa /tmp para evitar límites de E/S de sistemas de archivos de red.)
-os.environ["DATABASE_URL"] = "sqlite:////tmp/citafacil_test.db"
-os.environ["ADMIN_TOKEN"] = "test-token"
+import pytest
+from fastapi.testclient import TestClient
 
-from datetime import timedelta  # noqa: E402
-
-import pytest  # noqa: E402
-from fastapi.testclient import TestClient  # noqa: E402
-
-from app import models  # noqa: E402
-from app.database import Base, SessionLocal, engine  # noqa: E402
-from app.main import app  # noqa: E402
-from app.utils import PhoneError, local_now, normalize_cl_phone  # noqa: E402
+from app.main import app
+from app.utils import PhoneError, local_now, normalize_cl_phone
 
 client = TestClient(app)
-
-
-@pytest.fixture(autouse=True)
-def fresh_db():
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
-    db.add(models.Service(name="Corte", duration_min=30, price=8000, active=True))
-    db.commit()
-    db.close()
-    yield
-    Base.metadata.drop_all(bind=engine)
 
 
 def _next_open_day_at(hour: int):

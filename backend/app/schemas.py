@@ -71,6 +71,32 @@ class AppointmentOut(BaseModel):
     service: Optional[ServiceOut] = None
 
 
+# ---------- Dispositivo recordado (HU-1) ----------
+class DeviceProfileIn(BaseModel):
+    customer_name: str = Field(..., min_length=2, max_length=120)
+    customer_phone: str = Field(..., examples=["+56 9 4291 6570"])
+
+    @field_validator("customer_name")
+    @classmethod
+    def _strip_name(cls, v: str) -> str:
+        return v.strip()
+
+    @field_validator("customer_phone")
+    @classmethod
+    def _validate_phone(cls, v: str) -> str:
+        try:
+            return normalize_cl_phone(v)
+        except PhoneError as e:
+            raise ValueError(str(e))
+
+
+class DeviceProfileOut(BaseModel):
+    known: bool
+    customer_name: Optional[str] = None
+    customer_phone: Optional[str] = None
+    detail: Optional[str] = None
+
+
 class AppointmentStatusUpdate(BaseModel):
     status: str
 
