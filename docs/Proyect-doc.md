@@ -10,7 +10,7 @@ Reservas en línea para pequeños negocios (demo: "Barbería Don Lucho", Chile).
 2. Deja nombre y celular.
 3. Recibe confirmación y recordatorio por WhatsApp (Twilio). Sin credenciales corre en **modo demo**: el mensaje solo se registra en el log.
 
-Evita el doble-booking y ofrece un panel de administración protegido por token. Proyecto de portafolio de Giancarlos Alfaro. Incluye además un router ajeno al dominio: el ranking del juego "ÚLTIMA RONDA 3D".
+Evita el doble-booking y ofrece un panel de administración con cuentas individuales, permisos por rol y registro de actividad. Proyecto de portafolio de Giancarlos Alfaro. Incluye además un router ajeno al dominio: el ranking del juego "ÚLTIMA RONDA 3D".
 
 ## 2. Stack
 
@@ -31,14 +31,18 @@ citafacil/
 ├── backend/
 │   ├── app/
 │   │   ├── main.py  config.py  database.py  models.py  schemas.py
-│   │   ├── crud.py  availability.py  notifications.py  reminders.py
-│   │   ├── auth.py  utils.py
-│   │   └── routers/ (public.py, admin.py, scores.py)
-│   ├── tests/test_booking.py
-│   ├── seed.py  requirements.txt  Dockerfile  .env.example
-├── frontend/ (index.html, admin.html)
+│   │   ├── crud.py  availability.py  analytics.py  device.py  manage.py
+│   │   ├── notifications.py  reminders.py  utils.py
+│   │   ├── auth.py  permissions.py  audit.py
+│   │   └── routers/ (public, admin, analytics, device, manage, staff_auth,
+│   │                 users, audit_log, scores)
+│   ├── tests/ (conftest.py y 8 archivos test_*.py)
+│   ├── seed.py  seed_history.py  manage_users.py
+│   ├── requirements.txt  Dockerfile  .env.example
+├── frontend/ (index.html, manage.html, scheduler.js, scheduler.css,
+│              admin.html, admin-staff.js)
 ├── render.yaml
-├── docs/
+├── docs/ (Proyect-doc.md, AI-Development-Log.md, historias-de-usuario/, qa/)
 └── README.md
 ```
 
@@ -52,7 +56,9 @@ citafacil/
 | `models.py` | `Service`, `Appointment`; estados `pending`, `confirmed`, `cancelled`, `done` |
 | `schemas.py` | Validación Pydantic; teléfono a E.164, fecha a hora local sin zona |
 | `crud.py` | Operaciones sobre servicios y citas, más `stats` |
-| `availability.py` | `generate_slots`, `is_slot_free`, `_overlaps` |
+| `availability.py` | `generate_slots`, `is_slot_free` (solo inicios de la grilla, QA-01), `_overlaps`, calendario y franjas (HU-2) y `booking_lock` (QA-06) |
+| `analytics.py` | HU-3: series por servicio y proyección de demanda |
+| `device.py` | HU-1: token y perfil del dispositivo recordado |
 | `notifications.py` | Textos de confirmación y recordatorio; `send_whatsapp` (Twilio o demo) |
 | `reminders.py` | `run_reminders` y `run_reminders_job` (cada `REMINDER_POLL_MINUTES`) |
 | `manage.py` | HU-5: `create_link`, `current_link`, `block_reason`, `reschedule`, `cancel` |
@@ -164,7 +170,7 @@ Parámetros comunes: `range` (7d, 14d, 30d, 90d, 180d, 365d; por defecto 30d) o 
 
 ## 7. Flujos clave
 
-**Reserva.** `POST /appointments` valida servicio activo → `is_slot_free` (día abierto, dentro de horario, en el futuro, sin solape con citas no canceladas) → crea cita `pending` → envía confirmación por WhatsApp.
+**Reserva.** `POST /appointments` valida servicio activo → `is_slot_free` (día abierto, dentro de horario, inicio alineado a la grilla, en el futuro, sin solape con citas no canceladas), todo dentro de `booking_lock` → crea cita `pending` → envía confirmación por WhatsApp.
 
 **Recordatorios.** Cada `REMINDER_POLL_MINUTES` (15) el programador busca citas `pending` o `confirmed`, con `reminder_sent=False`, que empiecen dentro de las próximas `REMINDER_HOURS_BEFORE` (24) horas. Envía y marca `reminder_sent` solo si el envío fue exitoso. Desde la revisión de QA (QA-02) el recordatorio incluye el enlace de autogestión de HU-5: como solo se guarda el hash del token, `manage.rotate_link` genera uno nuevo en la misma fila (conserva las reprogramaciones usadas) y el enlace anterior deja de servir.
 
@@ -178,24 +184,31 @@ Parámetros comunes: `range` (7d, 14d, 30d, 90d, 180d, 365d; por defecto 30d) o 
 - HU-2: el selector de fecha es un calendario mensual propio (`/api/calendar`); al elegir día se muestran todas las franjas (`/api/schedule`): libres clicables, ocupadas tachadas y horas pasadas atenuadas.
 - HU-1: al cargar, `GET /api/device/profile` prellena nombre y celular; tras reservar, un modal ofrece guardar (dispositivo nuevo) o actualizar (datos distintos) los datos.
 - `index.html`: asistente de 3 pasos.
-- `admin.html`: login con token (`localStorage.citafacil_token`), estadísticas, citas (filtros; confirmar, cancelar, realizada, eliminar), servicios (crear, activar, eliminar) y botón de recordatorios.
+- `admin.html`: acceso con usuario y contraseña (ver HU-6 arriba), estadísticas, citas (filtros; confirmar, cancelar, realizada, eliminar), servicios (crear, activar, eliminar) y botón de recordatorios, cada uno visible según el permiso.
 
 ## 8. Configuración (variables de entorno)
 
 | Variable | Defecto |
 |---|---|
 | `DATABASE_URL` | `sqlite:///./citafacil.db` |
-| `ADMIN_TOKEN` | `cambia-este-token-admin` |
+| `ADMIN_TOKEN` | `cambia-este-token-admin` (solo instala al primer propietario; con el valor por defecto se rechaza) |
 | `CORS_ORIGINS` | `*` |
 | `BUSINESS_NAME` / `BUSINESS_TIMEZONE` / `CURRENCY` | Barbería Don Lucho / America/Santiago / CLP |
 | `OPEN_HOUR` / `CLOSE_HOUR` / `SLOT_INTERVAL_MINUTES` | 10 / 20 / 30 |
 | `CLOSED_WEEKDAYS` | `6` (domingo; 0 = lunes) |
 | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_WHATSAPP_FROM` | vacío = modo demo |
 | `REMINDER_HOURS_BEFORE` / `REMINDER_POLL_MINUTES` | 24 / 15 |
+| `DEFAULT_COUNTRY` | `CL` en el código (el `.env.example` usa `PA`) |
+| `PUBLIC_BASE_URL` | `http://localhost:8000` |
+| `MANAGE_CUTOFF_HOURS` / `MANAGE_MAX_RESCHEDULES` | 2 / 2 |
+| `DEVICE_COOKIE_NAME` / `DEVICE_COOKIE_DAYS` / `COOKIE_SECURE` | `citafacil_device` / 365 / false |
+| `SESSION_HOURS` / `LOGIN_MAX_ATTEMPTS` / `LOGIN_LOCK_MINUTES` / `PASSWORD_MIN_LENGTH` | 12 / 5 / 15 / 10 |
 
 ## 9. Tests
 
 `backend/tests/conftest.py` fija la BD temporal (portable a Windows), una configuración independiente de `backend/.env` (país base CL, zona horaria, horario, días cerrados y Twilio vacío) y la fixture `fresh_db`. `backend/tests/test_device_profile.py` (3 tests, HU-1): camino feliz, varios dispositivos sin sobreescribir token, y token inválido/olvidado.
+
+`backend/tests/test_qa_regressions.py` (7 tests): regresiones de los hallazgos de QA (grilla, enlace en el recordatorio, XSS, doble reserva concurrente). La suite completa son 33 tests.
 
 `backend/tests/test_staff.py` (4 tests, HU-6), `backend/tests/test_manage.py` (3 tests, HU-5), `backend/tests/test_phone_international.py` (3 tests, HU-4), `backend/tests/test_schedule.py` (3 tests, HU-2) y `backend/tests/test_analytics.py` (4 tests, HU-3).
 
@@ -207,12 +220,13 @@ Ejecutar: `cd backend; python -m pytest`.
 
 ## 10. Puntos de atención al revisar cambios
 
-- **Doble reserva bajo concurrencia.** Comprobar disponibilidad e insertar no es atómico y no hay restricción única en la base.
+- **Doble reserva bajo concurrencia.** Desde QA-06 un candado en memoria (`booking_lock`) vuelve atómica la comprobación más el insert, pero solo dentro de un proceso: con varios workers o instancias el riesgo vuelve, porque la base no tiene restricción única.
 - **Disponibilidad.** `_booked_that_day` solo considera citas que *empiezan* ese día. El horario es global (sin profesionales ni sucursales) y no hay margen entre citas.
 - **Zona horaria.** Citas en hora local sin zona; `created_at` en UTC. Cuidado al tocar `local_now` o `to_local_naive`.
 - **Seguridad.**
   - Panel admin con cuentas individuales, permisos y registro de actividad (HU-6); `ADMIN_TOKEN` solo instala al primer propietario.
   - CORS abierto (`*`).
+  - Los nombres de servicio se escapan en la página pública (QA-03; antes eran un XSS).
   - `/api/scores` y `POST /appointments` sin límite de uso ni captcha.
 - **Integridad.** `DELETE /services/{id}` con citas asociadas puede fallar por la clave foránea sin manejo. `PATCH` de estado no valida transiciones.
 - **Programador.** Corre dentro de cada proceso: con varios workers los recordatorios se duplicarían. Si falla el envío de la confirmación, se ignora.
@@ -223,7 +237,14 @@ Ejecutar: `cd backend; python -m pytest`.
 
 ## 11. Verificación sugerida para cualquier cambio
 
+0. Usar Python 3.10 a 3.12 (con 3.14 falla la instalación de `pydantic` y `psycopg2-binary`).
 1. `cd backend; pip install -r requirements.txt; python -m pytest`
 2. `python seed.py`
 3. `python -m uvicorn app.main:app --reload` y probar `/docs`
 4. Abrir `frontend/index.html` y `frontend/admin.html` contra la API local (`?api=http://localhost:8000`)
+
+## 12. Documentación del proceso
+
+- `docs/historias-de-usuario/`: `HU-v2.md` y, por cada HU, `Plan-HU-N.md` y `Resultado-HU-N.md`.
+- `docs/qa/`: `Reporte-QA.md` (hallazgos QA-01 a QA-11 y validación de cada HU), `Pull-Request.md` y `evidencia/` (salidas de pytest, scripts y capturas).
+- `docs/AI-Development-Log.md`: uso de la IA, respuestas incorrectas, cambios rechazados y decisiones humanas.
