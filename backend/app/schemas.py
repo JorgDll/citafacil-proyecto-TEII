@@ -121,6 +121,57 @@ class DayOut(BaseModel):
     free: int
 
 
+# ---------- Análisis de demanda (HU-3) ----------
+class ServiceCountOut(BaseModel):
+    service_id: int
+    name: str
+    count: int
+
+
+class ServiceCountsOut(BaseModel):
+    start: str
+    end: str
+    total: int
+    items: list[ServiceCountOut]
+
+
+class SeriesOut(BaseModel):
+    service_id: int
+    name: str
+    counts: list[int]
+
+
+class TrendOut(BaseModel):
+    start: str
+    end: str
+    group_by: str
+    labels: list[str]
+    series: list[SeriesOut]
+
+
+class HistoryPoint(BaseModel):
+    date: str
+    count: int
+
+
+class ForecastPoint(BaseModel):
+    date: str
+    expected: float
+    lower: float
+    upper: float
+
+
+class ForecastOut(BaseModel):
+    enough_data: bool
+    message: Optional[str] = None
+    horizon: int
+    method: str
+    trend_per_week: float
+    expected_total: float
+    history: list[HistoryPoint]
+    forecast: list[ForecastPoint]
+
+
 # ---------- Otros ----------
 class ConfigOut(BaseModel):
     business_name: str

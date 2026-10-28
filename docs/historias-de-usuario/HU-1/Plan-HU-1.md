@@ -67,5 +67,5 @@ Sin migraciones: `create_all` crea la tabla nueva; no se altera ninguna existent
 
 ## Riesgos / notas
 - Quien tenga acceso al navegador ve los datos prellenados (inherente a "recordar"); por eso existe "olvidar este dispositivo".
-- HU-5 (teléfonos internacionales) cambiará `normalize_cl_phone`; el perfil lo reutiliza, así que heredará el cambio.
+- HU-4 (teléfonos internacionales) cambiará `normalize_cl_phone`; el perfil lo reutiliza, así que heredará el cambio.
 - Fuera de alcance: expiración por inactividad (solo `Max-Age`), límite de uso en `/remember`.

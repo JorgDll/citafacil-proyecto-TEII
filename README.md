@@ -112,6 +112,16 @@ python -m uvicorn app.main:app --reload
 
 🔒 = requiere la cabecera `X-Admin-Token`.
 
+**Análisis de demanda (HU-3)** — solo admin (🔒). Se calcula contando `appointments` (no canceladas, por fecha de la cita); no hay tablas nuevas. Rango con `range=7d|14d|30d|90d|180d|365d` (trimestre/semestre/año móviles, terminan hoy) o libre con `from` y `to`; `service_ids=1,2` filtra servicios.
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/admin/analytics/services` | Barras: reservas por servicio |
+| GET | `/api/admin/analytics/trend` | Líneas: reservas en el tiempo por servicio (`group_by=day\|week\|month`, automático por defecto) |
+| GET | `/api/admin/analytics/forecast?horizon=14\|30\|90` | Proyección de demanda con banda de incertidumbre |
+
+Los gráficos están en el panel admin (pestañas Barras · Líneas · Proyección, con Chart.js por CDN). Para verlos con datos de prueba: `python seed_history.py` (≈12 meses de citas demo marcadas con `[demo-historial]`; `--reset` las regenera sin tocar reservas reales).
+
 **Calendario y franjas (HU-2)** — muestra todo el horario con lo ocupado bloqueado, en lugar de ocultarlo.
 
 | Método | Ruta | Descripción |

@@ -8,10 +8,10 @@ Como cliente, quiero ver un calendario dinámico con los días disponibles y ocu
 # HU - 3 (cambio-esperado)
 Como administrador del sistema, quiero ver gráficos de previsión de la demanda basados en el histórico, para ajustar los precios y el inventario de forma inteligente.
 
-# HU - 5 (implementacion-propia) - Cambio de formato de telefono de chileno a formato internacional.
+# HU - 4 (implementacion-propia) - Cambio de formato de telefono de chileno a formato internacional.
 Como dueño del sistema en panamá quiero que mis clientes tengan la posibilidad aceptar más numeros telefonicos para que los mensajes de whatsapp se entreguen a cualquier cliente que desee reservar sin importar su numero telefonico.
 
-# HU - 4 (implementacion-propia) - Autogestión de la cita por el cliente
+# HU - 5 (implementacion-propia) - Autogestión de la cita por el cliente
 Como cliente que ya reservó una cita, quiero cancelarla o reprogramarla desde un enlace personal que llega en mi mensaje de confirmación de WhatsApp, para no tener que llamar al negocio y para que mi horario quede libre para otra persona.
 
 # HU - 6 (implementacion-propia) - Cuentas de administración con roles y registro de actividad

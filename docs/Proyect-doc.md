@@ -82,6 +82,15 @@ citafacil/
 | GET | `/stats` | Contadores por estado y próximas |
 | POST | `/reminders/run` | Ejecutar recordatorios ahora |
 
+### Análisis de demanda (`/api/admin/analytics`, HU-3, requiere `X-Admin-Token`)
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/services` | Reservas por servicio (barras) |
+| GET | `/trend` | Serie temporal por servicio (líneas); `group_by` day/week/month, automático según el rango |
+| GET | `/forecast?horizon=` | Proyección a 14/30/90 días: `history` (28 d), `forecast` (`expected`, `lower`, `upper`), `trend_per_week`, `expected_total`, `enough_data` |
+
+Parámetros comunes: `range` (7d, 14d, 30d, 90d, 180d, 365d; por defecto 30d) o `from`+`to` (máx. 3 años), y `service_ids`. Cuenta citas no canceladas por `start_at`. Proyección: factor por día de la semana × recta de tendencia (mínimos cuadrados) entrenada con los últimos 90 días sin contar hoy; sin datos suficientes (menos de 14 días o 5 reservas) devuelve `enough_data:false`. Lógica en `backend/app/analytics.py`.
+
 ### Calendario y franjas (HU-2)
 | Método | Ruta | Descripción |
 |---|---|---|
@@ -122,6 +131,7 @@ citafacil/
 **Frontend.**
 - Se sirve desde FastAPI en `http://localhost:8000/app/` (mismo origen que la API).
 - URL de la API: `?api=` → `localStorage.citafacil_api` → origen actual (o Render si se abre por `file://`).
+- HU-3: el panel admin tiene la tarjeta "Análisis de demanda" (Chart.js 4.4.1 por CDN) con pestañas Barras, Líneas y Proyección, filtros de rango (presets y fechas libres) y chips de servicios.
 - HU-2: el selector de fecha es un calendario mensual propio (`/api/calendar`); al elegir día se muestran todas las franjas (`/api/schedule`): libres clicables, ocupadas tachadas y horas pasadas atenuadas.
 - HU-1: al cargar, `GET /api/device/profile` prellena nombre y celular; tras reservar, un modal ofrece guardar (dispositivo nuevo) o actualizar (datos distintos) los datos.
 - `index.html`: asistente de 3 pasos.
@@ -143,6 +153,8 @@ citafacil/
 ## 9. Tests
 
 `backend/tests/conftest.py` fija la BD temporal (portable a Windows) y la fixture `fresh_db`. `backend/tests/test_device_profile.py` (3 tests, HU-1): camino feliz, varios dispositivos sin sobreescribir token, y token inválido/olvidado.
+
+`backend/tests/test_schedule.py` (3 tests, HU-2) y `backend/tests/test_analytics.py` (4 tests, HU-3).
 
 `backend/tests/test_booking.py` (6 tests): formatos de teléfono válidos e inválidos, creación y conflicto 409, disponibilidad que excluye horas reservadas, rechazo de teléfono inválido (422) y autenticación admin.
 
