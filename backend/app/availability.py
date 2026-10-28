@@ -121,6 +121,10 @@ def is_slot_free(
     close_dt = datetime.combine(start_at.date(), time(hour=settings.close_hour))
     if start_at < open_dt or end_at > close_dt:
         return False
+    # Solo inicios de la grilla (p. ej. 10:00, 10:30): una cita a las 10:13 bloquearía
+    # dos franjas a la vez y dejaría huecos que nadie puede reservar.
+    if (start_at - open_dt) % timedelta(minutes=settings.slot_interval_minutes):
+        return False
     if start_at <= local_now():
         return False
 
