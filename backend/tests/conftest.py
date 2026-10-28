@@ -1,15 +1,30 @@
 """Configuración compartida de los tests.
 
-La base de datos de prueba y el token admin se fijan ANTES de importar la app
-(pytest carga este archivo antes que los módulos de test).
+La configuración se fija ANTES de importar la app (pytest carga este archivo antes
+que los módulos de test). Las variables de entorno tienen prioridad sobre
+`backend/.env`, así el resultado de los tests no depende de la máquina: país base,
+zona horaria, horario y días cerrados quedan fijos, y Twilio vacío = modo demo
+(los tests nunca envían WhatsApp reales aunque el `.env` tenga credenciales).
 """
 import os
 import tempfile
 from pathlib import Path
 
 _DB_FILE = Path(tempfile.gettempdir()) / "citafacil_test.db"
-os.environ["DATABASE_URL"] = f"sqlite:///{_DB_FILE.as_posix()}"
-os.environ["ADMIN_TOKEN"] = "test-token"
+os.environ.update({
+    "DATABASE_URL": f"sqlite:///{_DB_FILE.as_posix()}",
+    "ADMIN_TOKEN": "test-token",
+    "DEFAULT_COUNTRY": "CL",
+    "BUSINESS_TIMEZONE": "America/Santiago",
+    "CURRENCY": "CLP",
+    "OPEN_HOUR": "10",
+    "CLOSE_HOUR": "20",
+    "SLOT_INTERVAL_MINUTES": "30",
+    "CLOSED_WEEKDAYS": "6",
+    "TWILIO_ACCOUNT_SID": "",
+    "TWILIO_AUTH_TOKEN": "",
+    "TWILIO_WHATSAPP_FROM": "",
+})
 
 import pytest  # noqa: E402
 

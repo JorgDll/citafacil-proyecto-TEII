@@ -161,7 +161,7 @@ Parámetros comunes: `range` (7d, 14d, 30d, 90d, 180d, 365d; por defecto 30d) o 
 
 ## 9. Tests
 
-`backend/tests/conftest.py` fija la BD temporal (portable a Windows) y la fixture `fresh_db`. `backend/tests/test_device_profile.py` (3 tests, HU-1): camino feliz, varios dispositivos sin sobreescribir token, y token inválido/olvidado.
+`backend/tests/conftest.py` fija la BD temporal (portable a Windows), una configuración independiente de `backend/.env` (país base CL, zona horaria, horario, días cerrados y Twilio vacío) y la fixture `fresh_db`. `backend/tests/test_device_profile.py` (3 tests, HU-1): camino feliz, varios dispositivos sin sobreescribir token, y token inválido/olvidado.
 
 `backend/tests/test_phone_international.py` (3 tests, HU-4), `backend/tests/test_schedule.py` (3 tests, HU-2) y `backend/tests/test_analytics.py` (4 tests, HU-3).
 

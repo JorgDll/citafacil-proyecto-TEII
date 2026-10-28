@@ -40,7 +40,7 @@ def _schedule(day: str, service_id: int = 1) -> dict:
 def test_happy_path_schedule_shows_every_slot_with_booked_blocked():
     # Reserva real por la API (30 min a las 11:00 del jueves 5-nov).
     r = client.post("/api/appointments", json={
-        "customer_name": "Ana", "customer_phone": "942916570",
+        "customer_name": "Ana", "customer_phone": "+56 9 4291 6570",
         "service_id": 1, "start_at": "2026-11-05T11:00:00",
     })
     assert r.status_code == 201, r.text

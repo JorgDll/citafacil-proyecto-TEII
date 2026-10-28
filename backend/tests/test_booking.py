@@ -61,7 +61,7 @@ def test_availability_removes_booked_slot():
         "/api/appointments",
         json={
             "customer_name": "Ana",
-            "customer_phone": "942916570",
+            "customer_phone": "+56 9 4291 6570",
             "service_id": sid,
             "start_at": day.isoformat(),
         },
