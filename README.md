@@ -112,6 +112,15 @@ python -m uvicorn app.main:app --reload
 
 🔒 = requiere la cabecera `X-Admin-Token`.
 
+**Calendario y franjas (HU-2)** — muestra todo el horario con lo ocupado bloqueado, en lugar de ocultarlo.
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/schedule?service_id=&date=` | Todas las franjas del día: `{time, available, reason}` (`reason`: `booked` o `past`) |
+| GET | `/api/calendar?service_id=&month=YYYY-MM` | Estado de cada día: `available`, `full`, `closed` o `past` (+ franjas libres) |
+
+`/api/availability` se mantiene igual (solo franjas libres).
+
 **Dispositivo recordado (HU-1)** — reservar sin volver a escribir tus datos, sin login. Se autentica con una cookie HttpOnly; el servidor guarda solo el SHA-256 del token.
 
 | Método | Ruta | Descripción |

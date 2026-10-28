@@ -82,6 +82,14 @@ citafacil/
 | GET | `/stats` | Contadores por estado y próximas |
 | POST | `/reminders/run` | Ejecutar recordatorios ahora |
 
+### Calendario y franjas (HU-2)
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/schedule?service_id=&date=` | Todas las franjas del día con `available` y `reason` (`booked` / `past`); día cerrado → lista vacía |
+| GET | `/calendar?service_id=&month=YYYY-MM` | Por día: `status` (`available` / `full` / `closed` / `past`) y `free`. 422 si el mes es inválido, 404 si el servicio no existe |
+
+`/availability` no cambia (solo libres). La disponibilidad depende de la duración del servicio.
+
 ### Dispositivo recordado (`/api/device`, HU-1, autenticado por cookie HttpOnly)
 | Método | Ruta | Descripción |
 |---|---|---|
@@ -114,6 +122,7 @@ citafacil/
 **Frontend.**
 - Se sirve desde FastAPI en `http://localhost:8000/app/` (mismo origen que la API).
 - URL de la API: `?api=` → `localStorage.citafacil_api` → origen actual (o Render si se abre por `file://`).
+- HU-2: el selector de fecha es un calendario mensual propio (`/api/calendar`); al elegir día se muestran todas las franjas (`/api/schedule`): libres clicables, ocupadas tachadas y horas pasadas atenuadas.
 - HU-1: al cargar, `GET /api/device/profile` prellena nombre y celular; tras reservar, un modal ofrece guardar (dispositivo nuevo) o actualizar (datos distintos) los datos.
 - `index.html`: asistente de 3 pasos.
 - `admin.html`: login con token (`localStorage.citafacil_token`), estadísticas, citas (filtros; confirmar, cancelar, realizada, eliminar), servicios (crear, activar, eliminar) y botón de recordatorios.

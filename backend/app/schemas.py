@@ -108,6 +108,19 @@ class AppointmentStatusUpdate(BaseModel):
         return v
 
 
+# ---------- Disponibilidad (HU-2) ----------
+class SlotOut(BaseModel):
+    time: str
+    available: bool
+    reason: Optional[str] = None   # None | "past" | "booked"
+
+
+class DayOut(BaseModel):
+    date: str
+    status: str                    # past | closed | full | available
+    free: int
+
+
 # ---------- Otros ----------
 class ConfigOut(BaseModel):
     business_name: str
