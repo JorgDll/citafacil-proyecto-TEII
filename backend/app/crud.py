@@ -87,6 +87,7 @@ def set_status(db: Session, appt: models.Appointment, status: str) -> models.App
 
 
 def delete_appointment(db: Session, appt: models.Appointment) -> None:
+    db.query(models.AppointmentLink).filter(models.AppointmentLink.appointment_id == appt.id).delete()
     db.delete(appt)
     db.commit()
 

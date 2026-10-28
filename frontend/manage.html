@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<title>Mi cita — CitaFácil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<style>
+  :root{
+    --bg:#0d1117; --bg-soft:#161b22; --card:#161b22; --border:#232a34;
+    --text:#e6edf3; --muted:#9aa7b4; --accent:#3b82f6; --accent-2:#22d3ee;
+    --ok:#22c55e; --warn:#f59e0b; --err:#f87171;
+    --grad:linear-gradient(135deg,#3b82f6 0%,#22d3ee 100%);
+    --shadow:0 12px 40px rgba(0,0,0,.35); --radius:16px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);
+    line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+  a{color:inherit;text-decoration:none}
+  .wrap{width:100%;max-width:720px;margin:0 auto;padding:0 22px}
+  header{position:sticky;top:0;z-index:20;backdrop-filter:blur(12px);background:rgba(13,17,23,.72);border-bottom:1px solid var(--border)}
+  nav{display:flex;align-items:center;height:62px}
+  .brand{font-weight:800;font-size:1.15rem;display:flex;align-items:center;gap:10px}
+  .brand i{color:var(--accent)}
+  main{flex:1;padding:30px 0 60px}
+  h1{font-size:1.5rem;font-weight:800;margin-bottom:4px}
+  .lead{color:var(--muted);margin-bottom:22px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:26px;box-shadow:var(--shadow);margin-bottom:20px}
+  .card h2{font-size:1.1rem;display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .card h2 i{color:var(--accent)}
+
+  .detail{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin-bottom:18px}
+  .detail dt{color:var(--muted);font-size:.86rem;font-weight:600}
+  .detail dd{font-weight:600}
+  .badge{font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap}
+  .b-pending{background:rgba(245,158,11,.14);color:var(--warn)}
+  .b-confirmed{background:rgba(59,130,246,.16);color:var(--accent-2)}
+  .b-cancelled{background:rgba(248,113,113,.14);color:var(--err)}
+  .b-done{background:rgba(34,197,94,.15);color:var(--ok)}
+  .notice{border-radius:10px;padding:11px 14px;font-size:.9rem;margin-bottom:16px;background:rgba(245,158,11,.1);
+    border:1px solid rgba(245,158,11,.3);color:#fde68a}
+  .msg{border-radius:10px;padding:11px 14px;font-size:.9rem;margin-top:14px;display:none}
+  .msg.err{display:block;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);color:#fecaca}
+  .msg.ok{display:block;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:#bbf7d0}
+
+  .actions{display:flex;gap:10px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:9px;padding:12px 22px;border-radius:12px;font:inherit;font-weight:700;font-size:.95rem;
+    cursor:pointer;border:none;background:var(--grad);color:#fff;box-shadow:0 8px 22px rgba(59,130,246,.3);transition:transform .15s,opacity .2s}
+  .btn:hover:not(:disabled){transform:translateY(-2px)} .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.ghost{background:transparent;border:1.5px solid var(--border);box-shadow:none;color:var(--text)}
+  .btn.danger{background:rgba(248,113,113,.14);border:1.5px solid rgba(248,113,113,.5);box-shadow:none;color:#fecaca}
+  .btn.danger:hover:not(:disabled){background:rgba(248,113,113,.24)}
+  .btn.danger-solid{background:#dc2626;box-shadow:0 8px 22px rgba(220,38,38,.3)}
+  .hide{display:none!important}
+  label{display:block;font-size:.85rem;color:var(--muted);margin:0 0 7px;font-weight:600}
+  input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:11px;color:var(--text);
+    font:inherit;padding:12px 14px;transition:border-color .2s,box-shadow .2s}
+  input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+  .empty{color:var(--muted);font-size:.9rem;padding:10px 0;display:flex;align-items:center;gap:9px}
+  .spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;flex:0 0 auto}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .summary{background:var(--bg-soft);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin:16px 0;font-size:.92rem}
+  .summary b{color:var(--accent-2)}
+  .final{text-align:center;padding:14px 0}
+  .final .ic{font-size:3rem;margin-bottom:12px}
+  .final.ok .ic{color:var(--ok)} .final.err .ic{color:var(--err)} .final.muted .ic{color:var(--muted)}
+  .final h2{justify-content:center;font-size:1.3rem;margin-bottom:8px}
+  .final p{color:var(--muted);margin-bottom:18px}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--card);border:1px solid rgba(248,113,113,.4);border-radius:var(--radius);padding:26px;max-width:440px;width:100%;box-shadow:var(--shadow)}
+  .modal h3{font-size:1.2rem;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+  .modal h3 i{color:var(--err)}
+  .modal p{color:var(--muted);font-size:.92rem;margin-bottom:16px}
+  .modal p b,.modal label b{color:var(--text)}
+  .modal .actions{margin-top:18px;justify-content:flex-end}
+  footer{border-top:1px solid var(--border);padding:22px 0;text-align:center;color:var(--muted);font-size:.85rem}
+  footer a{color:var(--accent-2);font-weight:600}
+</style>
+<link rel="stylesheet" href="scheduler.css" />
+</head>
+<body>
+<header><div class="wrap"><nav><div class="brand"><i class="fa-solid fa-calendar-check"></i><span id="brandName">CitaFácil</span></div></nav></div></header>
+
+<main>
+  <div class="wrap">
+    <!-- Cargando -->
+    <div class="card" id="vLoading"><div class="empty"><span class="spin"></span> Cargando tu cita…</div></div>
+
+    <!-- Enlace inválido / cancelado -->
+    <div class="card hide" id="vFinal">
+      <div class="final" id="finalBox">
+        <div class="ic" id="finalIc"></div>
+        <h2 id="finalTitle"></h2>
+        <p id="finalText"></p>
+        <a class="btn" href="index.html"><i class="fa-solid fa-plus"></i> Reservar una cita</a>
+      </div>
+    </div>
+
+    <!-- Mi cita -->
+    <div id="vMain" class="hide">
+      <h1>Hola, <span id="firstName"></span> 👋</h1>
+      <p class="lead">Aquí puedes cambiar o cancelar tu cita.</p>
+
+      <div class="card">
+        <h2><i class="fa-solid fa-calendar-day"></i> Tu cita</h2>
+        <dl class="detail">
+          <dt>Servicio</dt><dd id="dService"></dd>
+          <dt>Fecha</dt><dd id="dDate"></dd>
+          <dt>Hora</dt><dd id="dTime"></dd>
+          <dt>Estado</dt><dd><span class="badge" id="dStatus"></span></dd>
+        </dl>
+        <div class="notice hide" id="reason"></div>
+        <div class="actions">
+          <button class="btn" id="resBtn"><i class="fa-solid fa-calendar-days"></i> Reprogramar</button>
+          <button class="btn danger" id="cancelBtn"><i class="fa-solid fa-ban"></i> Cancelar cita</button>
+        </div>
+        <div class="msg" id="mainMsg"></div>
+      </div>
+
+      <!-- Reprogramar -->
+      <div class="card hide" id="cardRes">
+        <h2><i class="fa-solid fa-clock-rotate-left"></i> Elige el nuevo día y hora</h2>
+        <label>Fecha</label>
+        <div class="cal">
+          <div class="cal-head">
+            <button type="button" class="cal-nav" id="calPrev" aria-label="Mes anterior">&#8249;</button>
+            <b id="calTitle"></b>
+            <button type="button" class="cal-nav" id="calNext" aria-label="Mes siguiente">&#8250;</button>
+          </div>
+          <div class="cal-grid cal-dow"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+          <div class="cal-grid" id="calGrid"></div>
+          <div class="cal-legend">
+            <span><i class="l-av"></i>Con horarios</span><span><i class="l-fu"></i>Lleno</span><span><i class="l-ot"></i>Cerrado / pasado</span>
+          </div>
+        </div>
+        <label style="margin-top:16px">Horarios <span style="font-weight:400">(los tachados ya están ocupados)</span></label>
+        <div class="slots" id="slots"><div class="empty">Elige un día del calendario.</div></div>
+        <div class="summary hide" id="newSummary"></div>
+        <div class="actions" style="margin-top:14px">
+          <button class="btn" id="confirmRes" disabled><i class="fa-solid fa-check"></i> Confirmar nuevo horario</button>
+          <button class="btn ghost" id="closeRes">Volver</button>
+        </div>
+        <div class="msg" id="resMsg"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Confirmación escrita para cancelar -->
+<div class="modal-bg" id="cancelModal" role="dialog" aria-modal="true" aria-labelledby="cmTitle">
+  <div class="modal">
+    <h3 id="cmTitle"><i class="fa-solid fa-triangle-exclamation"></i> ¿Cancelar tu cita?</h3>
+    <p>Esta acción es <b>definitiva</b>: tu horario quedará libre para otra persona y <b>este enlace dejará de funcionar</b>. Si quieres volver, tendrás que reservar de nuevo.</p>
+    <label for="cmInput">Para confirmar, escribe <b>Cancelar cita</b></label>
+    <input id="cmInput" type="text" autocomplete="off" spellcheck="false" placeholder="Cancelar cita" />
+    <div class="msg" id="cmMsg"></div>
+    <div class="actions">
+      <button class="btn ghost" id="cmBack">Volver</button>
+      <button class="btn danger-solid" id="cmConfirm" disabled><i class="fa-solid fa-ban"></i> Cancelar cita definitivamente</button>
+    </div>
+  </div>
+</div>
+
+<footer><div class="wrap">Hecho con CitaFácil · <a href="index.html">Reservar una cita</a></div></footer>
+
+<script src="scheduler.js"></script>
+<script>
+  /* ====== CONFIG ====== */
+  const DEFAULT_API = location.protocol.startsWith("http") ? location.origin : "https://citafacil-api.onrender.com";
+  const qp = new URLSearchParams(location.search).get("api");
+  if (qp) localStorage.setItem("citafacil_api", qp);
+  const API = (localStorage.getItem("citafacil_api") || DEFAULT_API).replace(/\/$/, "");
+  const $ = id => document.getElementById(id);
+  const money = n => "$" + (n||0).toLocaleString("es-CL");
+
+  // El token viaja en el fragmento (#t=...): no llega al servidor ni a sus logs.
+  // Se copia a sessionStorage para sobrevivir a una recarga en la misma pestaña.
+  let TOKEN = (location.hash.match(/[#&]t=([^&]+)/) || [])[1] || "";
+  try{
+    if(TOKEN) sessionStorage.setItem("citafacil_manage_token", TOKEN);
+    else TOKEN = sessionStorage.getItem("citafacil_manage_token") || "";
+  }catch(e){ /* sin sessionStorage: solo el fragmento */ }
+
+  async function api(path, opts){
+    const o = Object.assign({}, opts||{});
+    o.headers = Object.assign({"X-Manage-Token": TOKEN}, o.headers||{});
+    const r = await fetch(API + path, o);
+    if(!r.ok){
+      let d; try{ d = await r.json(); }catch(e){}
+      let msg = d && d.detail;
+      if(Array.isArray(msg)) msg = msg.map(x=>String(x.msg||"").replace(/^Value error, /,"")).filter(Boolean).join(" · ");
+      const err = new Error(msg || ("Error " + r.status)); err.status = r.status; throw err;
+    }
+    return r.json();
+  }
+  const post = (path, body) => api(path, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+
+  const STATUS = { pending:["Pendiente de confirmación","b-pending"], confirmed:["Confirmada","b-confirmed"],
+                   cancelled:["Cancelada","b-cancelled"], done:["Realizada","b-done"] };
+  const show = id => ["vLoading","vFinal","vMain"].forEach(v=>$(v).classList.toggle("hide", v!==id));
+
+  function final(kind, icon, title, text){
+    $("finalBox").className = "final " + kind;
+    $("finalIc").innerHTML = `<i class="fa-solid ${icon}"></i>`;
+    $("finalTitle").textContent = title; $("finalText").textContent = text;
+    show("vFinal");
+  }
+  const invalidLink = () => final("muted", "fa-link-slash", "Este enlace ya no es válido",
+    "Puede que la cita haya sido cancelada o que el enlace sea incorrecto. Si necesitas ayuda, contacta al negocio.");
+
+  const fmtDate = iso => new Date(iso).toLocaleDateString("es-CL", {weekday:"long", day:"2-digit", month:"long"});
+  const fmtTime = iso => new Date(iso).toLocaleTimeString("es-CL", {hour:"2-digit", minute:"2-digit", hour12:false});
+
+  let cur = null;                    // última respuesta de /api/manage
+  function render(d){
+    cur = d;
+    $("brandName").textContent = d.business_name;
+    document.title = "Mi cita — " + d.business_name;
+    $("firstName").textContent = d.customer_first_name;
+    $("dService").textContent = `${d.service_name} · ${d.service_duration_min} min · ${money(d.service_price)}`;
+    $("dDate").textContent = fmtDate(d.start_at);
+    $("dTime").textContent = fmtTime(d.start_at);
+    const [label, cls] = STATUS[d.status] || [d.status, ""];
+    $("dStatus").textContent = label; $("dStatus").className = "badge " + cls;
+    $("reason").classList.toggle("hide", !d.reason);
+    $("reason").textContent = d.reason || "";
+    $("resBtn").classList.toggle("hide", !d.can_reschedule);
+    $("resBtn").innerHTML = `<i class="fa-solid fa-calendar-days"></i> Reprogramar (${d.reschedules_left} restante${d.reschedules_left===1?"":"s"})`;
+    $("cancelBtn").classList.toggle("hide", !d.can_cancel);
+    show("vMain");
+  }
+
+  async function load(){
+    if(!TOKEN){ invalidLink(); return; }
+    try{ render(await api("/api/manage")); }
+    catch(e){ if(e.status===404) invalidLink(); else final("err", "fa-circle-exclamation", "No pudimos cargar tu cita", e.message); }
+  }
+
+  /* ====== Reprogramar ====== */
+  let newStart = null;
+  const sch = createScheduler({
+    els:{ prev:$("calPrev"), next:$("calNext"), title:$("calTitle"), grid:$("calGrid"), slots:$("slots") },
+    ready: ()=>!!cur,
+    fetchMonth: ym => api(`/api/manage/calendar?month=${ym}`),
+    fetchSlots: date => api(`/api/manage/schedule?date=${date}`),
+    onDay: ()=>{ newStart = null; $("confirmRes").disabled = true; $("newSummary").classList.add("hide"); },
+    onSlot: (t, date)=>{
+      newStart = `${date}T${t}:00`;
+      $("newSummary").innerHTML = `Nuevo horario: <b>${fmtDate(newStart)}</b> a las <b>${t}</b>`;
+      $("newSummary").classList.remove("hide");
+      $("confirmRes").disabled = false;
+    }
+  });
+
+  $("resBtn").addEventListener("click", ()=>{
+    $("cardRes").classList.remove("hide"); $("resMsg").className = "msg";
+    sch.loadCalendar();
+    $("cardRes").scrollIntoView({behavior:"smooth", block:"start"});
+  });
+  $("closeRes").addEventListener("click", ()=>$("cardRes").classList.add("hide"));
+
+  $("confirmRes").addEventListener("click", async ()=>{
+    if(!newStart) return;
+    const btn = $("confirmRes"), msg = $("resMsg"); msg.className = "msg";
+    btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Reprogramando…';
+    try{
+      render(await post("/api/manage/reschedule", {start_at:newStart}));
+      $("cardRes").classList.add("hide"); newStart = null; sch.reset();
+      $("mainMsg").className = "msg ok";
+      $("mainMsg").textContent = "¡Listo! Tu cita fue reprogramada y te avisamos por WhatsApp. El negocio volverá a confirmarla.";
+      window.scrollTo({top:0, behavior:"smooth"});
+    }catch(e){
+      if(e.status===404){ invalidLink(); return; }
+      msg.className = "msg err"; msg.textContent = e.message;
+      sch.loadSlots(); sch.loadCalendar(); load();            // la franja pudo ocuparse; refresca todo
+      $("confirmRes").disabled = true;
+    }finally{ btn.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar nuevo horario'; }
+  });
+
+  /* ====== Cancelar: confirmación escrita ====== */
+  const PHRASE = "cancelar cita";
+  const typedOk = () => $("cmInput").value.trim().split(/\s+/).join(" ").toLowerCase() === PHRASE;
+  let lastFocus = null;
+
+  function openCancel(){
+    lastFocus = document.activeElement;
+    $("cmInput").value = ""; $("cmConfirm").disabled = true; $("cmMsg").className = "msg";
+    $("cancelModal").classList.add("open"); $("cmInput").focus();
+  }
+  function closeCancel(){
+    $("cancelModal").classList.remove("open");
+    if(lastFocus) lastFocus.focus();
+  }
+
+  $("cancelBtn").addEventListener("click", openCancel);
+  $("cmBack").addEventListener("click", closeCancel);
+  $("cancelModal").addEventListener("mousedown", e=>{ if(e.target === $("cancelModal")) closeCancel(); });
+  $("cmInput").addEventListener("input", ()=>{ $("cmConfirm").disabled = !typedOk(); });
+  $("cmInput").addEventListener("keydown", e=>{ if(e.key==="Enter" && typedOk()) $("cmConfirm").click(); });
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape" && $("cancelModal").classList.contains("open")) closeCancel(); });
+
+  $("cmConfirm").addEventListener("click", async ()=>{
+    if(!typedOk()) return;
+    const btn = $("cmConfirm"); btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Cancelando…';
+    try{
+      await post("/api/manage/cancel", {confirmation: $("cmInput").value});
+      closeCancel();
+      try{ sessionStorage.removeItem("citafacil_manage_token"); }catch(e){}
+      TOKEN = "";
+      final("ok", "fa-circle-check", "Tu cita fue cancelada", "El horario quedó libre para otra persona y te avisamos por WhatsApp. Este enlace ya no funciona; si quieres, puedes reservar de nuevo.");
+    }catch(e){
+      if(e.status===404){ closeCancel(); invalidLink(); return; }
+      $("cmMsg").className = "msg err"; $("cmMsg").textContent = e.message;
+      btn.disabled = !typedOk();
+    }finally{ btn.innerHTML = '<i class="fa-solid fa-ban"></i> Cancelar cita definitivamente'; }
+  });
+
+  load();
+</script>
+</body>
+</html>

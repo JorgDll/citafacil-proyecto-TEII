@@ -36,6 +36,12 @@ class Settings(BaseSettings):
     admin_token: str = "cambia-este-token-admin"
     cors_origins: str = "*"      # separado por comas, o "*" para todos
 
+    # --- Autogestión de la cita por el cliente (HU-5) ---
+    # URL pública de la app: base del enlace que llega por WhatsApp.
+    public_base_url: str = "http://localhost:8000"
+    manage_cutoff_hours: int = 2        # anticipación mínima para cancelar/reprogramar
+    manage_max_reschedules: int = 2     # reprogramaciones permitidas por cita
+
     # --- Dispositivo recordado (cookie HttpOnly) ---
     device_cookie_name: str = "citafacil_device"
     device_cookie_days: int = 365

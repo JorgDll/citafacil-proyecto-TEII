@@ -105,6 +105,55 @@ class DeviceProfileOut(BaseModel):
         return self
 
 
+class AppointmentCreatedOut(AppointmentOut):
+    """Respuesta de crear una cita: añade el enlace personal (sólo se conoce en este momento)."""
+
+    manage_url: Optional[str] = None
+
+
+# ---------- Autogestión de la cita (HU-5) ----------
+CANCEL_PHRASE = "cancelar cita"
+
+
+class ManageOut(BaseModel):
+    business_name: str
+    service_name: str
+    service_duration_min: int
+    service_price: int
+    start_at: datetime
+    end_at: datetime
+    status: str
+    customer_first_name: str
+    can_cancel: bool
+    can_reschedule: bool
+    reason: Optional[str] = None
+    reschedules_left: int
+    cutoff_hours: int
+
+
+class RescheduleIn(BaseModel):
+    start_at: datetime = Field(..., description="Nuevo inicio de la cita (ISO 8601)")
+
+    @field_validator("start_at")
+    @classmethod
+    def _naive_local(cls, v: datetime) -> datetime:
+        return to_local_naive(v)
+
+
+class CancelIn(BaseModel):
+    # Obligatorio (sin valor por defecto): los validadores no corren sobre defaults, así
+    # que un cuerpo vacío `{}` habría saltado la confirmación.
+    confirmation: str = Field(..., description='Debe ser el texto "Cancelar cita"')
+
+    @field_validator("confirmation")
+    @classmethod
+    def _must_type_phrase(cls, v: str) -> str:
+        # Sin distinguir mayúsculas ni espacios sobrantes, pero el texto debe coincidir.
+        if " ".join((v or "").split()).casefold() != CANCEL_PHRASE:
+            raise ValueError("Escribe «Cancelar cita» para confirmar.")
+        return v
+
+
 class AppointmentStatusUpdate(BaseModel):
     status: str
 

@@ -55,6 +55,7 @@ citafacil/
 | `availability.py` | `generate_slots`, `is_slot_free`, `_overlaps` |
 | `notifications.py` | Textos de confirmación y recordatorio; `send_whatsapp` (Twilio o demo) |
 | `reminders.py` | `run_reminders` y `run_reminders_job` (cada `REMINDER_POLL_MINUTES`) |
+| `manage.py` | HU-5: `create_link`, `current_link`, `block_reason`, `reschedule`, `cancel` |
 | `auth.py` | `require_admin`: cabecera `X-Admin-Token` contra `ADMIN_TOKEN` |
 | `utils.py` | `normalize_phone` (E.164 internacional, solo móviles), `phone_parts`, `list_countries`, `normalize_cl_phone` (regla chilena lenient, solo para `DEFAULT_COUNTRY=CL`), `local_now`, `to_local_naive` |
 | `routers/public.py` | Endpoints públicos |
@@ -81,6 +82,16 @@ citafacil/
 | DELETE | `/appointments/{id}` | Eliminar |
 | GET | `/stats` | Contadores por estado y próximas |
 | POST | `/reminders/run` | Ejecutar recordatorios ahora |
+
+### Autogestión de la cita (`/api/manage`, HU-5, cabecera `X-Manage-Token`)
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `` | `ManageOut`: servicio, inicio/fin, estado, nombre de pila, `can_cancel`, `can_reschedule`, `reason`, `reschedules_left` (sin teléfono) |
+| POST | `/cancel` | Cuerpo `{confirmation}` obligatorio, debe ser "Cancelar cita" (sin distinguir mayúsculas ni espacios sobrantes; 422 si no). Cancela, **borra el enlace** y avisa por WhatsApp |
+| POST | `/reschedule` | Cuerpo `{start_at}`; usa `is_slot_free(..., exclude_id=<la propia cita>)`; pasa la cita a `pending`, `reminder_sent=False`, `reschedule_count += 1` y avisa por WhatsApp |
+| GET | `/schedule?date=` · `/calendar?month=` | Como HU-2 pero para el servicio de esa cita y sin contar la propia cita como ocupada |
+
+Token ausente, desconocido o revocado → 404 "Enlace inválido o vencido.". Reglas (`app/manage.py`): solo citas `pending`/`confirmed` y futuras, con al menos `MANAGE_CUTOFF_HOURS` de anticipación (justo 2 h se permite); reprogramar además exige cupo (`MANAGE_MAX_RESCHEDULES`). `POST /api/appointments` devuelve `manage_url` (`AppointmentCreatedOut`); el listado admin no cambia.
 
 ### Teléfonos internacionales (HU-4)
 | Método | Ruta | Descripción |
@@ -124,6 +135,7 @@ Parámetros comunes: `range` (7d, 14d, 30d, 90d, 180d, 365d; por defecto 30d) o 
 ## 6. Modelo de datos
 
 - **services**: `id`, `name`, `duration_min`, `price` (CLP entero), `active`.
+- **appointment_links** (HU-5): `id`, `appointment_id` (único), `token_hash` (SHA-256 hex, único), `reschedule_count`, `created_at`. Una fila por cita creada desde HU-5; se borra al cancelar la cita desde el enlace o al eliminarla el admin. Las citas anteriores no tienen enlace.
 - **appointments**: `id`, `customer_name`, `customer_phone` (E.164), `service_id` (FK), `start_at` / `end_at` (sin zona, hora local del negocio), `status`, `notes`, `reminder_sent`, `created_at` (UTC sin zona).
 - **device_profiles** (HU-1): `id`, `token_hash` (SHA-256 hex, único), `customer_name`, `customer_phone`, `created_at`, `last_used_at`. Una fila por dispositivo; el token en claro solo existe en la cookie `citafacil_device`.
 - **game_scores**: `id`, `name` (≤20), `round`, `score` (indexado), `created_at` (UTC con zona).
@@ -139,6 +151,7 @@ Parámetros comunes: `range` (7d, 14d, 30d, 90d, 180d, 365d; por defecto 30d) o 
 **Frontend.**
 - Se sirve desde FastAPI en `http://localhost:8000/app/` (mismo origen que la API).
 - URL de la API: `?api=` → `localStorage.citafacil_api` → origen actual (o Render si se abre por `file://`).
+- HU-5: `manage.html` (enlace personal): detalle de la cita, reprogramar con el calendario compartido y cancelar con un modal que exige escribir "Cancelar cita". El calendario y las franjas viven en `scheduler.js` / `scheduler.css`, compartidos con `index.html`. La tarjeta de éxito de la reserva muestra "Cambiar o cancelar mi cita".
 - HU-4: el celular es un selector de país con búsqueda (`+código | bandera | ISO`, banderas de flag-icons por CDN) más el número nacional; el placeholder cambia con el país y busca por nombre (es/en), ISO o código. Se envía `+<código> <número>`.
 - HU-3: el panel admin tiene la tarjeta "Análisis de demanda" (Chart.js 4.4.1 por CDN) con pestañas Barras, Líneas y Proyección, filtros de rango (presets y fechas libres) y chips de servicios.
 - HU-2: el selector de fecha es un calendario mensual propio (`/api/calendar`); al elegir día se muestran todas las franjas (`/api/schedule`): libres clicables, ocupadas tachadas y horas pasadas atenuadas.
@@ -163,7 +176,7 @@ Parámetros comunes: `range` (7d, 14d, 30d, 90d, 180d, 365d; por defecto 30d) o 
 
 `backend/tests/conftest.py` fija la BD temporal (portable a Windows), una configuración independiente de `backend/.env` (país base CL, zona horaria, horario, días cerrados y Twilio vacío) y la fixture `fresh_db`. `backend/tests/test_device_profile.py` (3 tests, HU-1): camino feliz, varios dispositivos sin sobreescribir token, y token inválido/olvidado.
 
-`backend/tests/test_phone_international.py` (3 tests, HU-4), `backend/tests/test_schedule.py` (3 tests, HU-2) y `backend/tests/test_analytics.py` (4 tests, HU-3).
+`backend/tests/test_manage.py` (3 tests, HU-5), `backend/tests/test_phone_international.py` (3 tests, HU-4), `backend/tests/test_schedule.py` (3 tests, HU-2) y `backend/tests/test_analytics.py` (4 tests, HU-3).
 
 `backend/tests/test_booking.py` (6 tests): formatos de teléfono válidos e inválidos, creación y conflicto 409, disponibilidad que excluye horas reservadas, rechazo de teléfono inválido (422) y autenticación admin.
 

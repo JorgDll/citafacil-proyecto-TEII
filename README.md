@@ -112,6 +112,17 @@ python -m uvicorn app.main:app --reload
 
 🔒 = requiere la cabecera `X-Admin-Token`.
 
+**Autogestión de la cita (HU-5)** — la confirmación de WhatsApp incluye un enlace personal (`{PUBLIC_BASE_URL}/app/manage.html#t=<token>`) para reprogramar o cancelar sin llamar al negocio. El token va en el fragmento de la URL (no llega a los logs) y el servidor solo guarda su SHA-256. Los endpoints usan la cabecera `X-Manage-Token`. Reglas: hasta `MANAGE_CUTOFF_HOURS` (2) horas antes y máximo `MANAGE_MAX_RESCHEDULES` (2) reprogramaciones. **Cancelar exige escribir "Cancelar cita"** y revoca el enlace (el mismo URL deja de servir); reprogramar devuelve la cita a `pending` para que el negocio la reconfirme.
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/manage` | Detalle de la cita y qué se puede hacer (sin teléfono) |
+| POST | `/api/manage/cancel` `{confirmation}` | Cancela y revoca el enlace; 422 si el texto no es "Cancelar cita" |
+| POST | `/api/manage/reschedule` `{start_at}` | Reprograma (409 si no está libre o fuera de reglas) |
+| GET | `/api/manage/schedule?date=` · `/api/manage/calendar?month=` | Disponibilidad para reprogramar (la propia cita no cuenta como ocupada) |
+
+`POST /api/appointments` ahora devuelve además `manage_url`. En local el enlace apunta a `localhost`: para abrirlo desde un teléfono define `PUBLIC_BASE_URL` con la IP de tu red, un túnel o tu dominio.
+
 **Teléfonos internacionales (HU-4)** — el celular se valida y guarda en E.164 (`+50761234567`). Solo se aceptan **móviles**: los fijos, gratuitos, de tarifa premium y VoIP se rechazan con 422. Los números escritos sin `+` se interpretan con `DEFAULT_COUNTRY`.
 
 | Método | Ruta | Descripción |
@@ -158,6 +169,8 @@ El frontend ahora se sirve desde la propia API (mismo origen, necesario para la 
 | `DATABASE_URL` | `sqlite:///./citafacil.db` | Conexión a la base de datos |
 | `ADMIN_TOKEN` | `cambia-este-token-admin` | Token del panel admin |
 | `CORS_ORIGINS` | `*` | Dominios permitidos del frontend |
+| `PUBLIC_BASE_URL` | `http://localhost:8000` | Base del enlace de autogestión que se envía por WhatsApp |
+| `MANAGE_CUTOFF_HOURS` / `MANAGE_MAX_RESCHEDULES` | `2` / `2` | Anticipación mínima y reprogramaciones permitidas |
 | `DEFAULT_COUNTRY` | `CL` | País base ISO para números sin `+` y país preseleccionado (ej. `PA`) |
 | `BUSINESS_NAME` | `Barbería Don Lucho` | Nombre del negocio |
 | `OPEN_HOUR` / `CLOSE_HOUR` | `10` / `20` | Horario de atención |

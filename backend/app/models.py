@@ -49,6 +49,24 @@ class Appointment(Base):
     service = relationship("Service", back_populates="appointments")
 
 
+class AppointmentLink(Base):
+    """Enlace personal para que el cliente gestione SU cita (HU-5).
+
+    Solo se guarda el SHA-256 del token (que viaja en el enlace de WhatsApp). Se borra
+    la fila al cancelar la cita: así el enlace deja de servir.
+    """
+
+    __tablename__ = "appointment_links"
+
+    id = Column(Integer, primary_key=True, index=True)
+    appointment_id = Column(Integer, ForeignKey("appointments.id"), nullable=False, unique=True)
+    token_hash = Column(String(64), nullable=False, unique=True, index=True)
+    reschedule_count = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    appointment = relationship("Appointment")
+
+
 class DeviceProfile(Base):
     """Datos de un cliente recordados en UN dispositivo (HU-1).
 

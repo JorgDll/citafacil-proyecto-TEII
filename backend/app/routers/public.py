@@ -11,9 +11,11 @@ from .. import crud, schemas
 from ..availability import build_day_slots, generate_slots, is_slot_free, month_overview
 from ..config import settings
 from ..database import get_db
+from .. import manage
 from ..notifications import confirmation_message, send_whatsapp
 from ..utils import list_countries
 
+MONTH_RE = re.compile(r"(\d{4})-(\d{2})")
 router = APIRouter(prefix="/api", tags=["Público"])
 
 
@@ -71,7 +73,7 @@ def get_calendar(
     month: str = Query(..., description="Mes en formato YYYY-MM"),
     db: Session = Depends(get_db),
 ):
-    m = re.fullmatch(r"(\d{4})-(\d{2})", month)
+    m = MONTH_RE.fullmatch(month)
     if not m or not 1 <= int(m.group(2)) <= 12 or int(m.group(1)) < 1900:
         raise HTTPException(status_code=422, detail="Mes inválido. Usa el formato YYYY-MM.")
     service = crud.get_service(db, service_id)
@@ -82,7 +84,7 @@ def get_calendar(
 
 @router.post(
     "/appointments",
-    response_model=schemas.AppointmentOut,
+    response_model=schemas.AppointmentCreatedOut,
     status_code=201,
     summary="Crear una reserva",
 )
@@ -98,9 +100,12 @@ def create_appointment(payload: schemas.AppointmentCreate, db: Session = Depends
     end_at = payload.start_at + timedelta(minutes=service.duration_min)
     appt = crud.create_appointment(db, payload, service, end_at)
 
+    # Enlace personal para que el cliente cambie o cancele su cita (HU-5)
+    manage_url = manage.build_manage_url(manage.create_link(db, appt))
+
     # Confirmación por WhatsApp (real si Twilio está configurado; simulada si no)
     body = confirmation_message(
-        settings.business_name, appt.customer_name, service.name, appt.start_at
+        settings.business_name, appt.customer_name, service.name, appt.start_at, manage_url
     )
     send_whatsapp(appt.customer_phone, body)
-    return appt
+    return schemas.AppointmentCreatedOut.model_validate(appt).model_copy(update={"manage_url": manage_url})
