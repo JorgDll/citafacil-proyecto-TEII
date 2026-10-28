@@ -1,0 +1,37 @@
+# Tests de regresión de QA contra el código del developer (deben FALLAR)
+# Código: a00d137 feat(HU-6): cuentas de administración con permisos y registro de actividad + backend/tests/test_qa_regressions.py de la rama QA
+# Fecha: 2026-10-28 16:31 -05 · Python 3.12.16
+# Comando: python -m pytest -v -p no:warnings --tb=line tests/test_qa_regressions.py
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.16, pytest-8.2.2, pluggy-1.7.0 -- .venv/bin/python
+cachedir: .pytest_cache
+rootdir: backend
+plugins: anyio-4.15.1
+collecting ... collected 7 items
+
+tests/test_qa_regressions.py::test_qa01_off_grid_start_is_rejected[2026-11-05T11:13:00] FAILED [ 14%]
+tests/test_qa_regressions.py::test_qa01_off_grid_start_is_rejected[2026-11-05T11:00:30] FAILED [ 28%]
+tests/test_qa_regressions.py::test_qa01_off_grid_start_is_rejected[2026-11-05T10:45:00] FAILED [ 42%]
+tests/test_qa_regressions.py::test_qa01_grid_still_works_and_reschedule_is_also_validated FAILED [ 57%]
+tests/test_qa_regressions.py::test_qa02_reminder_includes_working_link_and_rotates_token FAILED [ 71%]
+tests/test_qa_regressions.py::test_qa02_reminder_creates_link_for_appointments_without_one FAILED [ 85%]
+tests/test_qa_regressions.py::test_qa06_concurrent_bookings_create_a_single_appointment FAILED [100%]
+
+=================================== FAILURES ===================================
+backend/tests/test_qa_regressions.py:69: AssertionError: {"id":1,"customer_name":"Ana Pérez","customer_phone":"+56942916570","service_id":1,"start_at":"2026-11-05T11:13:00","end_at":"2026-11-05T11:43:00","status":"pending","notes":"","reminder_sent":false,"created_at":"2026-10-28T21:31:02.020790","service":{"name":"Corte","duration_min":30,"price":8000,"active":true,"id":1},"manage_url":"http://testserver/app/manage.html#t=r4GgpjhMEhwaJDUkf7ZeapSXXYQvJOI4oWJliDsA2RE"}
+backend/tests/test_qa_regressions.py:69: AssertionError: {"id":1,"customer_name":"Ana Pérez","customer_phone":"+56942916570","service_id":1,"start_at":"2026-11-05T11:00:30","end_at":"2026-11-05T11:30:30","status":"pending","notes":"","reminder_sent":false,"created_at":"2026-10-28T21:31:02.047102","service":{"name":"Corte","duration_min":30,"price":8000,"active":true,"id":1},"manage_url":"http://testserver/app/manage.html#t=efihHCfuybjUNEmurPydE0P38vJ-MMwv0Hb4vUES6jY"}
+backend/tests/test_qa_regressions.py:69: AssertionError: {"id":1,"customer_name":"Ana Pérez","customer_phone":"+56942916570","service_id":1,"start_at":"2026-11-05T10:45:00","end_at":"2026-11-05T11:15:00","status":"pending","notes":"","reminder_sent":false,"created_at":"2026-10-28T21:31:02.063279","service":{"name":"Corte","duration_min":30,"price":8000,"active":true,"id":1},"manage_url":"http://testserver/app/manage.html#t=4nWOH7d99J3b0pkyPMqfqrkMk1FSRj-NJyLbUWpjoJM"}
+backend/tests/test_qa_regressions.py:83: assert 200 == 409
+backend/tests/test_qa_regressions.py:102: AssertionError: assert 'http://testserver/app/manage.html#t=' in 'Hola Ana Pérez, te recordamos tu cita en Barbería Don Lucho:\n✂️ Corte\n🗓️ jueves 05-11 a las 11:30\n\nSi no puedes asistir, responde este mensaje. ¡Gracias!'
+backend/tests/test_qa_regressions.py:129: IndexError: list index out of range
+backend/tests/test_qa_regressions.py:150: AssertionError: {'2026-11-05T11:00:00': 2, '2026-11-05T12:00:00': 6, '2026-11-05T13:00:00': 15, '2026-11-05T14:00:00': 15, ...}
+=========================== short test summary info ============================
+FAILED tests/test_qa_regressions.py::test_qa01_off_grid_start_is_rejected[2026-11-05T11:13:00]
+FAILED tests/test_qa_regressions.py::test_qa01_off_grid_start_is_rejected[2026-11-05T11:00:30]
+FAILED tests/test_qa_regressions.py::test_qa01_off_grid_start_is_rejected[2026-11-05T10:45:00]
+FAILED tests/test_qa_regressions.py::test_qa01_grid_still_works_and_reschedule_is_also_validated
+FAILED tests/test_qa_regressions.py::test_qa02_reminder_includes_working_link_and_rotates_token
+FAILED tests/test_qa_regressions.py::test_qa02_reminder_creates_link_for_appointments_without_one
+FAILED tests/test_qa_regressions.py::test_qa06_concurrent_bookings_create_a_single_appointment
+============================== 7 failed in 1.49s ===============================

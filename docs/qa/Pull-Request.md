@@ -24,6 +24,9 @@ Sprint de 6 historias de usuario sobre CitaFácil:
 | QA | fix(QA-03): escapar el nombre del servicio en `index.html` | QA |
 | QA | test(QA): regresiones de QA-01 y QA-02 | QA |
 | QA | docs(QA): reporte de QA, AI Development Log y descripción del PR | QA |
+| QA | fix(QA-06): impedir doble reserva con peticiones simultáneas | QA |
+| QA | test(QA-06): 5 rondas de concurrencia | QA |
+| QA | docs(QA): evidencias, capturas de IA y AI Log actualizado | QA |
 
 ## Cambio incompatible
 
@@ -35,7 +38,7 @@ Sprint de 6 historias de usuario sobre CitaFácil:
 cd backend
 uv venv --python 3.12 .venv && source .venv/bin/activate   # Python 3.10–3.12
 pip install -r requirements.txt
-python -m pytest -q                 # 32 passed
+python -m pytest -q                 # 33 passed
 python seed.py && python seed_history.py
 uvicorn app.main:app --reload       # http://localhost:8000/app/
 ```
@@ -43,16 +46,17 @@ uvicorn app.main:app --reload       # http://localhost:8000/app/
 ## Checklist de revisión (QA)
 
 - [x] Cada HU tiene plan, resultado y tests (`docs/historias-de-usuario/HU-x/`)
-- [x] La suite completa pasa (32/32)
+- [x] La suite completa pasa (33/33)
 - [x] Cada bug encontrado en QA tiene un test que falla sin la corrección
 - [x] Criterios de aceptación revisados uno por uno (`docs/qa/Reporte-QA.md` §5)
 - [x] Desviaciones respecto a las HU justificadas (HU-5: tabla y endpoints; HU-6: cookie en vez de JWT)
 - [x] Sin secretos en el repo (`.env` ignorado; `ADMIN_TOKEN` por defecto rechazado)
 - [x] AI Development Log con respuestas incorrectas, cambios rechazados y decisiones humanas (`docs/AI-Development-Log.md`)
+- [x] Evidencia de las pruebas y capturas de la sesión de IA (`docs/qa/evidencia/`)
 - [ ] Verificación visual pendiente (`Reporte-QA.md` §8): XSS de QA-03 en el navegador, enlace del recordatorio y vista móvil
 
 ## Riesgos conocidos (no bloquean)
 
-QA-06 (doble booking sin restricción en la BD con PostgreSQL), QA-07 (bloqueo de cuenta por terceros), QA-08 (auditoría fuera de la transacción), QA-09 (zona horaria y moneda de Chile en `.env.example`), QA-10 (`datetime.utcnow` deprecado). Detalle en `docs/qa/Reporte-QA.md` §6.
+QA-06 con varios workers (el candado solo protege dentro de un proceso), QA-07 (bloqueo de cuenta por terceros), QA-08 (auditoría fuera de la transacción), QA-09 (zona horaria y moneda de Chile en `.env.example`), QA-10 (`datetime.utcnow` deprecado), QA-11 (reabrir una cita cancelada no comprueba la franja). Detalle en `docs/qa/Reporte-QA.md` §6.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)

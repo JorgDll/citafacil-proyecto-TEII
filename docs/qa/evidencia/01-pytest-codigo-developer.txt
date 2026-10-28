@@ -1,0 +1,40 @@
+# Suite del developer sobre su propio código
+# Código: a00d137 feat(HU-6): cuentas de administración con permisos y registro de actividad
+# Fecha: 2026-10-28 16:29 -05 · Python 3.12.16
+# Comando: python -m pytest -v -p no:warnings
+
+============================= test session starts ==============================
+platform linux -- Python 3.12.16, pytest-8.2.2, pluggy-1.7.0 -- .venv/bin/python
+cachedir: .pytest_cache
+rootdir: backend
+plugins: anyio-4.15.1
+collecting ... collected 26 items
+
+tests/test_analytics.py::test_happy_path_bars_and_lines_count_requested_services PASSED [  3%]
+tests/test_analytics.py::test_edge_range_boundaries_filters_and_validation PASSED [  7%]
+tests/test_analytics.py::test_edge_forecast_keeps_weekly_pattern_and_needs_enough_data PASSED [ 11%]
+tests/test_analytics.py::test_unit_forecast_trend_sign_follows_demand PASSED [ 15%]
+tests/test_booking.py::test_phone_valid_formats PASSED                   [ 19%]
+tests/test_booking.py::test_phone_invalid PASSED                         [ 23%]
+tests/test_booking.py::test_create_and_conflict PASSED                   [ 26%]
+tests/test_booking.py::test_availability_removes_booked_slot PASSED      [ 30%]
+tests/test_booking.py::test_reject_invalid_phone_on_booking PASSED       [ 34%]
+tests/test_booking.py::test_admin_auth PASSED                            [ 38%]
+tests/test_device_profile.py::test_happy_path_remember_and_prefill PASSED [ 42%]
+tests/test_device_profile.py::test_edge_many_devices_and_token_never_overwritten PASSED [ 46%]
+tests/test_device_profile.py::test_edge_invalid_token_is_unknown_device PASSED [ 50%]
+tests/test_manage.py::test_happy_path_link_in_whatsapp_cancel_with_typed_confirmation_revokes_link PASSED [ 53%]
+tests/test_manage.py::test_edge_reschedule_rules_own_slot_cap_and_reset PASSED [ 57%]
+tests/test_manage.py::test_edge_token_scope_cutoff_status_and_own_schedule PASSED [ 61%]
+tests/test_phone_international.py::test_happy_path_international_booking_countries_and_examples PASSED [ 65%]
+tests/test_phone_international.py::test_edge_only_mobile_numbers_and_invalid_input_are_rejected PASSED [ 69%]
+tests/test_phone_international.py::test_edge_default_country_shared_dial_codes_and_profile_split PASSED [ 73%]
+tests/test_schedule.py::test_happy_path_schedule_shows_every_slot_with_booked_blocked PASSED [ 76%]
+tests/test_schedule.py::test_edge_overlap_depends_on_duration_and_cancelled_does_not_block PASSED [ 80%]
+tests/test_schedule.py::test_edge_calendar_statuses_past_hours_and_validation PASSED [ 84%]
+tests/test_staff.py::test_staff_flow_setup_roles_forced_password_change_and_audit PASSED [ 88%]
+tests/test_staff.py::test_edge_permission_matrix_phone_masking_csrf_and_legacy_token PASSED [ 92%]
+tests/test_staff.py::test_edge_account_security_lockout_hashes_sessions_and_owner_rules PASSED [ 96%]
+tests/test_staff.py::test_audit_log_filters_pagination_customer_actions_and_append_only PASSED [100%]
+
+============================== 26 passed in 8.76s ==============================
