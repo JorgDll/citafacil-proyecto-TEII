@@ -132,19 +132,24 @@ def test_qa02_reminder_creates_link_for_appointments_without_one(clock, sent):
 
 # ---------- QA-06: reservas simultáneas a la misma franja ----------
 def test_qa06_concurrent_bookings_create_a_single_appointment():
+    """5 rondas de 20 reservas simultáneas: una carrera puede salir bien por suerte en una
+    ronda, pero sin el candado es prácticamente imposible que salgan bien las 5."""
     from concurrent.futures import ThreadPoolExecutor
 
-    def book(i):
+    def book(args):
+        start, i = args
         # Un cliente por hilo y sin `with`: el `with` arrancaría el programador en cada uno.
         return TestClient(app).post("/api/appointments", json={
-            "customer_name": f"Carrera {i}", "customer_phone": PHONE, "service_id": 1, "start_at": THU_11,
+            "customer_name": f"Carrera {i}", "customer_phone": PHONE, "service_id": 1, "start_at": start,
         }).status_code
 
+    starts = [f"2026-11-05T{h}:00:00" for h in (11, 12, 13, 14, 15)]
     with ThreadPoolExecutor(20) as ex:
-        codes = list(ex.map(book, range(20)))
-    assert codes.count(201) == 1 and codes.count(409) == 19, codes
+        results = {s: list(ex.map(book, [(s, i) for i in range(20)])) for s in starts}
+    created = {s: codes.count(201) for s, codes in results.items()}
+    assert all(n == 1 for n in created.values()), created
     db = SessionLocal()
     try:
-        assert db.query(models.Appointment).count() == 1
+        assert db.query(models.Appointment).count() == len(starts)
     finally:
         db.close()
