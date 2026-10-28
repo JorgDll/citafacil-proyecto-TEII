@@ -1,0 +1,9 @@
+# QA-11: reabrir una cita cancelada cuya franja ya fue tomada
+# Código: 6e289ba test(QA-06): 5 rondas de concurrencia para que el test no pase por suerte
+# Fecha: 2026-10-28 16:34 -05
+
+cancelar A por su enlace: 200
+reservar B en la misma franja: 201
+reabrir A desde el panel: 200 pending
+citas activas en 2026-11-04T15:00:00: [('Cliente A', 'pending'), ('Cliente B', 'pending')]
+RESULTADO: DOBLE RESERVA (QA-11)

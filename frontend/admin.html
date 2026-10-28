@@ -77,6 +77,38 @@
   .add-svc{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end;margin-top:14px}
   .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);border-radius:11px;padding:12px 18px;box-shadow:var(--shadow);font-size:.9rem;display:none;z-index:50}
   .toast.err{border-color:rgba(248,113,113,.5)} .toast.ok{border-color:rgba(34,197,94,.5)}
+  .tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--border)}
+  .tab{background:none;border:none;color:var(--muted);font:inherit;font-weight:700;font-size:.9rem;padding:9px 16px;cursor:pointer;
+    border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab:hover{color:var(--text)} .tab.active{color:var(--accent-2);border-bottom-color:var(--accent-2)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .chip{background:var(--bg-soft);border:1.5px solid var(--border);color:var(--muted);border-radius:999px;padding:6px 14px;
+    font:inherit;font-size:.83rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;user-select:none}
+  .chip:hover{color:var(--text)}
+  .chip.on{border-color:var(--accent);color:var(--text);background:rgba(59,130,246,.14)}
+  .chip .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .chip input{display:none}
+  .an-filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:14px}
+  .an-filters .field{margin:0;min-width:140px}
+  .chart-box{position:relative;height:340px}
+  .an-note{color:var(--muted);font-size:.82rem;margin-top:12px}
+  .who{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted)}
+  .who b{color:var(--text)}
+  .link-btn{background:none;border:none;color:var(--accent-2);font:inherit;font-size:.85rem;font-weight:600;cursor:pointer;padding:0}
+  .msg-err{color:var(--err);font-size:.85rem;margin-top:12px}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);display:none;align-items:flex-start;
+    justify-content:center;padding:30px 16px;z-index:60;overflow-y:auto}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;max-width:520px;width:100%;box-shadow:var(--shadow)}
+  .modal h3{font-size:1.15rem;margin-bottom:14px}
+  .modal .actions{margin-top:16px;justify-content:flex-end}
+  .perm-grid{display:grid;gap:8px;margin:6px 0 4px}
+  .perm{display:flex;align-items:flex-start;gap:10px;font-size:.88rem;color:var(--text);cursor:pointer;margin:0}
+  .perm input{width:auto;margin-top:5px}
+  .perm.off{opacity:.55;cursor:not-allowed}
+  .b-neutral{background:rgba(154,167,180,.14);color:var(--muted)}
+  .pager{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;color:var(--muted);font-size:.85rem}
+  td.detail{color:var(--muted);font-size:.85rem;max-width:340px}
   .hide{display:none!important}
   @media(max-width:680px){ .add-svc{grid-template-columns:1fr 1fr}; table{font-size:.82rem}; th:nth-child(3),td:nth-child(3){display:none} }
 </style>
@@ -88,7 +120,9 @@
       <div class="brand"><i class="fa-solid fa-calendar-check"></i> CitaFácil <span style="color:var(--muted);font-weight:600;font-size:.85rem">· Admin</span></div>
       <div class="nav-right">
         <a href="index.html"><i class="fa-solid fa-arrow-left"></i> Ver página de reservas</a>
-        <button id="logoutBtn" class="hide" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+        <span class="who hide" id="whoBox"><i class="fa-solid fa-circle-user"></i> <b id="whoName"></b> <span class="badge b-confirmed" id="whoRole"></span></span>
+        <button id="pwBtn" class="hide" onclick="showPassword(false)"><i class="fa-solid fa-key"></i> Contraseña</button>
+        <button id="logoutBtn" class="hide" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
       </div>
     </nav>
   </div>
@@ -98,18 +132,86 @@
   <div class="wrap">
 
     <!-- LOGIN -->
-    <div id="loginView" class="card login">
-      <h2><i class="fa-solid fa-lock"></i> Acceso administrador</h2>
-      <div class="field"><label for="tokenInput">Token de administrador</label><input id="tokenInput" type="password" placeholder="Tu ADMIN_TOKEN" /></div>
+    <div id="loginView" class="card login hide">
+      <h2><i class="fa-solid fa-lock"></i> Acceso al panel</h2>
+      <div class="field"><label for="userInput">Usuario</label><input id="userInput" autocomplete="username" autocapitalize="off" spellcheck="false" /></div>
+      <div class="field"><label for="passInput">Contraseña</label><input id="passInput" type="password" autocomplete="current-password" /></div>
       <button class="btn" id="loginBtn" style="width:100%"><i class="fa-solid fa-unlock"></i> Entrar</button>
-      <div id="loginMsg" style="color:var(--err);font-size:.85rem;margin-top:12px;display:none"></div>
+      <div id="loginMsg" class="msg-err hide"></div>
+    </div>
+
+    <!-- INSTALACIÓN: primer propietario -->
+    <div id="setupView" class="card login hide">
+      <h2><i class="fa-solid fa-user-shield"></i> Crear al propietario</h2>
+      <p style="color:var(--muted);font-size:.88rem;margin-bottom:16px">Aún no hay usuarios. Crea la cuenta del propietario con la clave de instalación (<code>ADMIN_TOKEN</code> de tu archivo <code>.env</code>). Después esa clave ya no abre el panel.</p>
+      <div class="field"><label for="suToken">Clave de instalación (ADMIN_TOKEN)</label><input id="suToken" type="password" autocomplete="off" /></div>
+      <div class="field"><label for="suName">Tu nombre</label><input id="suName" autocomplete="name" /></div>
+      <div class="field"><label for="suUser">Usuario</label><input id="suUser" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="ej: propietario" /></div>
+      <div class="field"><label for="suPass">Contraseña (mínimo 10 caracteres)</label><input id="suPass" type="password" autocomplete="new-password" /></div>
+      <div class="field"><label for="suPass2">Repite la contraseña</label><input id="suPass2" type="password" autocomplete="new-password" /></div>
+      <button class="btn" id="suBtn" style="width:100%"><i class="fa-solid fa-check"></i> Crear propietario y entrar</button>
+      <div id="suMsg" class="msg-err hide"></div>
+    </div>
+
+    <!-- CAMBIO DE CONTRASEÑA (obligatorio en el primer acceso) -->
+    <div id="pwView" class="card login hide">
+      <h2><i class="fa-solid fa-key"></i> Cambiar contraseña</h2>
+      <p id="pwNote" style="color:var(--muted);font-size:.88rem;margin-bottom:16px"></p>
+      <div class="field"><label for="pwCur">Contraseña actual</label><input id="pwCur" type="password" autocomplete="current-password" /></div>
+      <div class="field"><label for="pwNew">Contraseña nueva (mínimo 10 caracteres)</label><input id="pwNew" type="password" autocomplete="new-password" /></div>
+      <div class="field"><label for="pwNew2">Repite la contraseña nueva</label><input id="pwNew2" type="password" autocomplete="new-password" /></div>
+      <div class="actions" style="display:flex;gap:10px">
+        <button class="btn" id="pwSave"><i class="fa-solid fa-check"></i> Guardar</button>
+        <button class="btn ghost" id="pwCancel">Cancelar</button>
+      </div>
+      <div id="pwMsg" class="msg-err hide"></div>
     </div>
 
     <!-- DASHBOARD -->
     <div id="dashView" class="hide">
       <div class="stats" id="stats"></div>
 
-      <div class="card">
+      <div class="card" id="analyticsCard">
+        <h2><i class="fa-solid fa-chart-line"></i> An&aacute;lisis de demanda</h2>
+        <div class="tabs" id="anTabs">
+          <button class="tab active" data-tab="bars">Barras</button>
+          <button class="tab" data-tab="lines">L&iacute;neas</button>
+          <button class="tab" data-tab="forecast">Proyecci&oacute;n</button>
+        </div>
+
+        <div id="anRange">
+          <div class="chips" id="anPresets">
+            <button class="chip" data-r="7d">7 d&iacute;as</button>
+            <button class="chip" data-r="14d">14 d&iacute;as</button>
+            <button class="chip on" data-r="30d">30 d&iacute;as</button>
+            <button class="chip" data-r="90d">Trimestre</button>
+            <button class="chip" data-r="180d">Semestre</button>
+            <button class="chip" data-r="365d">A&ntilde;o</button>
+          </div>
+          <div class="an-filters">
+            <div class="field"><label for="anFrom">Desde</label><input type="date" id="anFrom" /></div>
+            <div class="field"><label for="anTo">Hasta</label><input type="date" id="anTo" /></div>
+            <div class="field" id="anGroupBox"><label for="anGroup">Agrupar por</label>
+              <select id="anGroup"><option value="">Autom&aacute;tico</option><option value="day">D&iacute;a</option>
+                <option value="week">Semana</option><option value="month">Mes</option></select></div>
+            <button class="btn ghost sm" id="anClear">Limpiar fechas</button>
+          </div>
+        </div>
+        <div class="an-filters hide" id="anHorizonBox">
+          <div class="field"><label for="anHorizon">Proyectar</label>
+            <select id="anHorizon"><option value="14">Pr&oacute;ximos 14 d&iacute;as</option>
+              <option value="30" selected>Pr&oacute;ximos 30 d&iacute;as</option><option value="90">Pr&oacute;ximos 90 d&iacute;as</option></select></div>
+        </div>
+
+        <label>Servicios</label>
+        <div class="chips" id="anServices"></div>
+
+        <div class="chart-box"><canvas id="anCanvas"></canvas></div>
+        <div class="empty hide" id="anEmpty"></div>
+        <p class="an-note" id="anNote"></p>
+      </div>
+
+      <div class="card" id="cardAppts">
         <h2><i class="fa-solid fa-list-check"></i> Reservas</h2>
         <div class="toolbar">
           <div class="field"><label for="fDate">Fecha</label><input type="date" id="fDate" /></div>
@@ -124,7 +226,7 @@
           </div>
           <button class="btn ghost sm" onclick="loadAppointments()"><i class="fa-solid fa-rotate"></i> Actualizar</button>
           <button class="btn ghost sm" onclick="clearFilters()">Limpiar</button>
-          <button class="btn sm" id="remindBtn" onclick="runReminders()"><i class="fa-brands fa-whatsapp"></i> Enviar recordatorios</button>
+          <button class="btn sm hide" id="remindBtn" onclick="runReminders()"><i class="fa-brands fa-whatsapp"></i> Enviar recordatorios</button>
         </div>
         <div style="overflow-x:auto">
           <table>
@@ -134,73 +236,308 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="cardSvcs">
         <h2><i class="fa-solid fa-scissors"></i> Servicios</h2>
         <div id="svcList"></div>
-        <div class="add-svc">
+        <div class="add-svc" id="addSvcForm">
           <div class="field" style="margin:0"><label>Nombre</label><input id="nsName" placeholder="Ej: Corte de pelo" /></div>
           <div class="field" style="margin:0"><label>Duración (min)</label><input id="nsDur" type="number" value="30" min="5" step="5" /></div>
           <div class="field" style="margin:0"><label>Precio (CLP)</label><input id="nsPrice" type="number" value="8000" min="0" step="500" /></div>
           <button class="btn sm" onclick="addService()"><i class="fa-solid fa-plus"></i> Agregar</button>
         </div>
       </div>
+      <div id="staffMount"></div>
     </div>
 
   </div>
 </main>
 <div class="toast" id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="admin-staff.js"></script>
 <script>
   /* ====== CONFIG ====== */
-  const DEFAULT_API = "https://citafacil-api.onrender.com";
+  const DEFAULT_API = location.protocol.startsWith("http") ? location.origin : "https://citafacil-api.onrender.com";
   const qp = new URLSearchParams(location.search).get("api");
   if (qp) localStorage.setItem("citafacil_api", qp);
   const API = (localStorage.getItem("citafacil_api") || DEFAULT_API).replace(/\/$/, "");
 
   const $ = id => document.getElementById(id);
   const money = n => "$" + (n||0).toLocaleString("es-CL");
-  let TOKEN = localStorage.getItem("citafacil_token") || "";
+  // HU-6: la sesión va en una cookie HttpOnly (el navegador la envía sola). El antiguo
+  // token compartido ya no existe: se borra el que pudiera haber quedado guardado.
+  try{ localStorage.removeItem("citafacil_token"); }catch(e){}
+  let ME = null;                                           // usuario de la sesión (/api/admin/auth/me)
+  const can = p => !!(ME && ME.permissions.includes(p));
+  const canAny = (...ps) => ps.some(can);
+  // Escapa texto que viene de clientes o del servidor antes de ponerlo en innerHTML.
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
   function toast(msg, kind){ const t=$("toast"); t.textContent=msg; t.className="toast "+(kind||""); t.style.display="block"; setTimeout(()=>t.style.display="none", 2800); }
 
   async function api(path, opts){
     opts = opts || {};
-    opts.headers = Object.assign({"X-Admin-Token": TOKEN}, opts.headers||{});
+    opts.credentials = "same-origin";
+    opts.headers = Object.assign({"X-Requested-With": "citafacil"}, opts.headers||{});   // defensa CSRF
     const r = await fetch(API + path, opts);
-    if(r.status===401 || r.status===422 && path.startsWith("/api/admin")){ /* handled by caller */ }
-    if(!r.ok){ let d; try{d=await r.json()}catch(e){}; const err=new Error((d&&d.detail)||("Error "+r.status)); err.status=r.status; throw err; }
+    if(!r.ok){
+      let d; try{d=await r.json()}catch(e){}
+      let msg = d && d.detail;
+      if(Array.isArray(msg)) msg = msg.map(x=>String(x.msg||"").replace(/^Value error, /,"")).filter(Boolean).join(" · ");
+      const err = new Error(msg || ("Error "+r.status)); err.status = r.status; throw err;
+    }
     return r.status===204 ? null : r.json();
   }
 
-  /* ====== LOGIN ====== */
-  $("loginBtn").addEventListener("click", doLogin);
-  $("tokenInput").addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
+  /* ====== ANÁLISIS DE DEMANDA (HU-3) ====== */
+  const an = { tab:"bars", range:"30d", from:"", to:"", group:"", horizon:30,
+               services:[], selected:new Set(), chart:null, req:0, ready:false };
+  const PALETTE = ["#3b82f6","#22d3ee","#22c55e","#f59e0b","#f87171","#a78bfa","#f472b6","#94a3b8"];
+  const colorOf = id => PALETTE[Math.max(0, an.services.findIndex(s=>s.id===id)) % PALETTE.length];
+  const MES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 
-  async function doLogin(){
-    const t = $("tokenInput").value.trim();
-    if(!t){ return; }
-    TOKEN = t;
+  function fmtLabel(l, group){
+    if(group==="month"){ const [y,m]=l.split("-"); return MES[+m-1]+" "+y.slice(2); }
+    const [y,m,d]=l.split("-"); return (group==="week" ? "sem " : "")+d+"/"+m;
+  }
+
+  async function initAnalytics(){
+    if(an.ready) return;
     try{
-      await api("/api/admin/stats");
-      localStorage.setItem("citafacil_token", TOKEN);
-      showDash();
+      an.services = await api("/api/admin/services");
+    }catch(e){ if(e.status===401) logout(); return; }
+    an.selected = new Set(an.services.map(s=>s.id));
+    const box = $("anServices"); box.innerHTML = "";
+    an.services.forEach(s=>{
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "chip on"; b.dataset.id = s.id;
+      b.innerHTML = `<span class="dot" style="background:${colorOf(s.id)}"></span>`;
+      b.appendChild(document.createTextNode(s.name));
+      b.onclick = ()=>{
+        an.selected.has(s.id) ? an.selected.delete(s.id) : an.selected.add(s.id);
+        b.classList.toggle("on", an.selected.has(s.id));
+        loadAnalytics();
+      };
+      box.appendChild(b);
+    });
+
+    document.querySelectorAll("#anTabs .tab").forEach(t=>t.onclick = ()=>{
+      an.tab = t.dataset.tab;
+      document.querySelectorAll("#anTabs .tab").forEach(x=>x.classList.toggle("active", x===t));
+      $("anRange").classList.toggle("hide", an.tab==="forecast");
+      $("anHorizonBox").classList.toggle("hide", an.tab!=="forecast");
+      $("anGroupBox").classList.toggle("hide", an.tab!=="lines");
+      loadAnalytics();
+    });
+    document.querySelectorAll("#anPresets .chip").forEach(c=>c.onclick = ()=>{
+      an.range = c.dataset.r; an.from = an.to = ""; $("anFrom").value = $("anTo").value = "";
+      markPreset(); loadAnalytics();
+    });
+    const onDates = ()=>{
+      an.from = $("anFrom").value; an.to = $("anTo").value;
+      if(!(an.from && an.to)) return;
+      markPreset(true);
+      if(an.from > an.to){            // se edita una fecha a la vez: no pedir un rango inválido
+        an.req++; anShow("La fecha «Desde» no puede ser posterior a «Hasta»."); $("anNote").textContent = "";
+        return;
+      }
+      loadAnalytics();
+    };
+    $("anFrom").addEventListener("change", onDates);
+    $("anTo").addEventListener("change", onDates);
+    $("anClear").onclick = ()=>{ an.from = an.to = ""; $("anFrom").value = $("anTo").value = ""; markPreset(); loadAnalytics(); };
+    $("anGroup").onchange = e=>{ an.group = e.target.value; loadAnalytics(); };
+    $("anHorizon").onchange = e=>{ an.horizon = +e.target.value; loadAnalytics(); };
+
+    an.ready = true;
+    $("anGroupBox").classList.add("hide");
+    loadAnalytics();
+  }
+
+  function markPreset(custom){
+    document.querySelectorAll("#anPresets .chip").forEach(c=>c.classList.toggle("on", !custom && c.dataset.r===an.range));
+  }
+
+  function anQuery(){
+    const p = new URLSearchParams();
+    if(an.tab !== "forecast"){
+      if(an.from && an.to){ p.set("from", an.from); p.set("to", an.to); } else p.set("range", an.range);
+      if(an.tab==="lines" && an.group) p.set("group_by", an.group);
+    } else p.set("horizon", an.horizon);
+    if(an.selected.size !== an.services.length) p.set("service_ids", [...an.selected].join(","));
+    return p.toString();
+  }
+
+  function anShow(msg){            // muestra un mensaje en lugar del gráfico
+    if(an.chart){ an.chart.destroy(); an.chart = null; }
+    $("anCanvas").parentElement.classList.toggle("hide", !!msg);
+    $("anEmpty").classList.toggle("hide", !msg);
+    $("anEmpty").textContent = msg || "";
+  }
+
+  async function loadAnalytics(){
+    if(!an.ready) return;
+    if(typeof Chart === "undefined"){ anShow("No se pudo cargar la librería de gráficos (Chart.js). Revisa tu conexión a internet."); return; }
+    if(!an.selected.size){ anShow("Selecciona al menos un servicio."); $("anNote").textContent=""; return; }
+    const my = ++an.req;
+    const path = {bars:"services", lines:"trend", forecast:"forecast"}[an.tab];
+    try{
+      const data = await api(`/api/admin/analytics/${path}?${anQuery()}`);
+      if(my !== an.req) return;          // llegó tarde: hay una petición más nueva
+      ({bars:drawBars, lines:drawLines, forecast:drawForecast})[an.tab](data);
     }catch(e){
-      $("loginMsg").style.display="block";
-      $("loginMsg").textContent = e.status===401 ? "Token incorrecto." : ("No se pudo conectar: "+e.message+" (API: "+API+")");
+      if(my !== an.req) return;
+      if(e.status===401){ logout(); return; }
+      anShow("No se pudo cargar el análisis: " + e.message); $("anNote").textContent = "";
     }
   }
 
-  function logout(){ localStorage.removeItem("citafacil_token"); TOKEN=""; location.reload(); }
+  function chartBase(){
+    Chart.defaults.color = "#9aa7b4";
+    Chart.defaults.borderColor = "#232a34";
+    Chart.defaults.font.family = "'Plus Jakarta Sans', system-ui, sans-serif";
+  }
+  const intAxis = { beginAtZero:true, ticks:{ precision:0 } };
+
+  function mount(config){
+    anShow(null); chartBase();
+    an.chart = new Chart($("anCanvas"), config);
+  }
+
+  function drawBars(d){
+    $("anNote").textContent = `${d.start} → ${d.end} · ${d.total} reserva${d.total===1?"":"s"} (sin contar canceladas)`;
+    if(!d.total){ anShow("Sin reservas en este rango."); return; }
+    mount({ type:"bar",
+      data:{ labels:d.items.map(i=>i.name),
+             datasets:[{ label:"Reservas", data:d.items.map(i=>i.count), backgroundColor:d.items.map(i=>colorOf(i.service_id)), borderRadius:8 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ y:intAxis } } });
+  }
+
+  function drawLines(d){
+    const total = d.series.reduce((a,s)=>a+s.counts.reduce((x,y)=>x+y,0), 0);
+    const unit = {day:"día", week:"semana", month:"mes"}[d.group_by];
+    $("anNote").textContent = `${d.start} → ${d.end} · agrupado por ${unit} · ${total} reserva${total===1?"":"s"} (sin contar canceladas)`;
+    if(!total){ anShow("Sin reservas en este rango."); return; }
+    mount({ type:"line",
+      data:{ labels:d.labels.map(l=>fmtLabel(l, d.group_by)),
+             datasets:d.series.map(s=>({ label:s.name, data:s.counts, borderColor:colorOf(s.service_id),
+               backgroundColor:colorOf(s.service_id), tension:.25, pointRadius:d.labels.length>60?0:3, borderWidth:2 })) },
+      options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:"index", intersect:false},
+                scales:{ y:intAxis, x:{ ticks:{ maxTicksLimit:14 } } } } });
+  }
+
+  function drawForecast(d){
+    if(!d.enough_data){ anShow(d.message); $("anNote").textContent = ""; return; }
+    const h = d.history, f = d.forecast, pad = a => new Array(a).fill(null);
+    const labels = [...h.map(x=>fmtLabel(x.date,"day")), ...f.map(x=>fmtLabel(x.date,"day"))];
+    const sign = d.trend_per_week>0 ? "+" : "";
+    $("anNote").textContent = `Método: ${d.method}. Total esperado en ${d.horizon} días: ${d.expected_total} reservas · `
+      + `tendencia: ${sign}${d.trend_per_week} reservas/día por semana · la banda sombreada es un intervalo de ~80 %.`;
+    mount({ type:"line",
+      data:{ labels, datasets:[
+        { label:"Histórico", data:[...h.map(x=>x.count), ...pad(f.length)], borderColor:"#9aa7b4", backgroundColor:"#9aa7b4", tension:.25, pointRadius:2, borderWidth:2 },
+        { label:"Esperado", data:[...pad(h.length), ...f.map(x=>x.expected)], borderColor:"#22d3ee", backgroundColor:"#22d3ee", tension:.25, pointRadius:2, borderWidth:2.5 },
+        { label:"Máx.", data:[...pad(h.length), ...f.map(x=>x.upper)], borderColor:"transparent", backgroundColor:"rgba(34,211,238,.15)", fill:"+1", pointRadius:0, tension:.25 },
+        { label:"Mín.", data:[...pad(h.length), ...f.map(x=>x.lower)], borderColor:"transparent", pointRadius:0, tension:.25 } ] },
+      options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:"index", intersect:false},
+                plugins:{ legend:{ labels:{ filter:i=>i.text==="Histórico" || i.text==="Esperado" } } },
+                scales:{ y:{ beginAtZero:true }, x:{ ticks:{ maxTicksLimit:14 } } } } });
+  }
+
+  /* ====== ACCESO (HU-6) ====== */
+  const views = ["loginView","setupView","pwView","dashView"];
+  const showView = id => views.forEach(v=>$(v).classList.toggle("hide", v!==id));
+  const showMsg = (id, text) => { const e=$(id); e.textContent = text; e.classList.toggle("hide", !text); };
+  const post = (path, body) => api(path, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+
+  $("loginBtn").addEventListener("click", doLogin);
+  ["userInput","passInput"].forEach(id=>$(id).addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); }));
+  $("suBtn").addEventListener("click", doSetup);
+  $("pwSave").addEventListener("click", doChangePassword);
+  ["pwCur","pwNew","pwNew2"].forEach(id=>$(id).addEventListener("keydown", e=>{ if(e.key==="Enter") doChangePassword(); }));
+
+  async function boot(){
+    try{
+      const st = await api("/api/admin/auth/setup-status");
+      if(st.needs_setup){ showView("setupView"); return; }
+    }catch(e){ showView("loginView"); showMsg("loginMsg", "No se pudo conectar: "+e.message+" (API: "+API+")"); return; }
+    try{ enter(await api("/api/admin/auth/me")); }
+    catch(e){ showView("loginView"); $("userInput").focus(); }
+  }
+
+  async function doLogin(){
+    const username = $("userInput").value.trim(), password = $("passInput").value;
+    if(!username || !password) return;
+    showMsg("loginMsg", "");
+    try{ enter(await post("/api/admin/auth/login", {username, password})); $("passInput").value = ""; }
+    catch(e){ showMsg("loginMsg", e.message); }
+  }
+
+  async function doSetup(){
+    const pass = $("suPass").value;
+    if(pass !== $("suPass2").value){ showMsg("suMsg", "Las contraseñas no coinciden."); return; }
+    showMsg("suMsg", "");
+    try{
+      enter(await post("/api/admin/auth/setup", {setup_token:$("suToken").value, display_name:$("suName").value.trim(),
+                                                   username:$("suUser").value.trim(), password:pass}));
+      ["suToken","suPass","suPass2"].forEach(id=>$(id).value = "");
+    }catch(e){ showMsg("suMsg", e.message); }
+  }
+
+  function enter(me){
+    ME = me;
+    $("whoName").textContent = me.display_name; $("whoRole").textContent = me.role_label;
+    ["whoBox","pwBtn","logoutBtn"].forEach(id=>$(id).classList.remove("hide"));
+    if(me.must_change_password){ showPassword(true); return; }
+    showDash();
+  }
+
+  function showPassword(forced){
+    $("pwNote").textContent = forced
+      ? "Entraste con una contraseña temporal. Elige una propia para continuar."
+      : "Al cambiarla se cerrarán tus sesiones en otros dispositivos.";
+    $("pwCancel").classList.toggle("hide", forced);
+    ["pwCur","pwNew","pwNew2"].forEach(id=>$(id).value = ""); showMsg("pwMsg", "");
+    showView("pwView"); $("pwCur").focus();
+  }
+  $("pwCancel").addEventListener("click", ()=>showDash());
+
+  async function doChangePassword(){
+    if($("pwNew").value !== $("pwNew2").value){ showMsg("pwMsg", "Las contraseñas nuevas no coinciden."); return; }
+    showMsg("pwMsg", "");
+    try{
+      enter(await post("/api/admin/auth/password", {current_password:$("pwCur").value, new_password:$("pwNew").value}));
+      toast("Contraseña actualizada", "ok");
+    }catch(e){ showMsg("pwMsg", e.message); }
+  }
+
+  async function doLogout(){ try{ await post("/api/admin/auth/logout", {}); }catch(e){} location.reload(); }
+  // La sesión se perdió (venció, la revocaron o desactivaron la cuenta): volver a la pantalla de acceso.
+  function logout(){ location.reload(); }
 
   function showDash(){
-    $("loginView").classList.add("hide");
-    $("dashView").classList.remove("hide");
-    $("logoutBtn").classList.remove("hide");
+    showView("dashView");
+    // Cada tarjeta solo se muestra con su permiso (el servidor es quien lo hace cumplir).
+    $("stats").classList.toggle("hide", !can("appointments.view"));
+    $("cardAppts").classList.toggle("hide", !can("appointments.view"));
+    $("cardSvcs").classList.toggle("hide", !canAny("appointments.view","services.manage","analytics.view") );
+    $("addSvcForm").classList.toggle("hide", !can("services.manage"));
+    $("remindBtn").classList.toggle("hide", !can("reminders.run"));
+    $("analyticsCard").classList.toggle("hide", !can("analytics.view"));
     refreshAll();
+    if(can("analytics.view")) initAnalytics();
+    initStaff();
   }
 
   /* ====== DATA ====== */
-  async function refreshAll(){ await Promise.all([loadStats(), loadAppointments(), loadServices()]); }
+  async function refreshAll(){
+    await Promise.all([
+      can("appointments.view") ? loadStats() : null,
+      can("appointments.view") ? loadAppointments() : null,
+      canAny("appointments.view","services.manage","analytics.view") ? loadServices() : null,
+    ]);
+    if(an.ready) loadAnalytics();   // las reservas cambian los conteos
+  }
 
   async function loadStats(){
     try{
@@ -226,18 +563,20 @@
       list.forEach(a=>{
         const tr=document.createElement("tr");
         const svc = a.service ? a.service.name : ("#"+a.service_id);
-        tr.innerHTML = `<td class="mono">${fmtDT(a.start_at)}</td><td>${a.customer_name}</td>
-          <td class="mono">${a.customer_phone}</td><td>${svc}</td>
-          <td><span class="badge b-${a.status}">${STLABEL[a.status]||a.status}</span></td>
-          <td><div class="actions">
-            <button class="ico ok" title="Confirmar" onclick="setStatus(${a.id},'confirmed')"><i class="fa-solid fa-check"></i></button>
-            <button class="ico ok" title="Marcar realizada" onclick="setStatus(${a.id},'done')"><i class="fa-solid fa-flag-checkered"></i></button>
-            <button class="ico warn" title="Cancelar" onclick="setStatus(${a.id},'cancelled')"><i class="fa-solid fa-ban"></i></button>
-            <button class="ico del" title="Eliminar" onclick="delAppt(${a.id})"><i class="fa-solid fa-trash"></i></button>
-          </div></td>`;
+        const acts = [];
+        if(can("appointments.confirm")){
+          acts.push(`<button class="ico ok" title="Confirmar" onclick="setStatus(${Number(a.id)},'confirmed')"><i class="fa-solid fa-check"></i></button>`);
+          acts.push(`<button class="ico ok" title="Marcar realizada" onclick="setStatus(${Number(a.id)},'done')"><i class="fa-solid fa-flag-checkered"></i></button>`);
+        }
+        if(can("appointments.cancel")) acts.push(`<button class="ico warn" title="Cancelar" onclick="setStatus(${Number(a.id)},'cancelled')"><i class="fa-solid fa-ban"></i></button>`);
+        if(can("appointments.delete")) acts.push(`<button class="ico del" title="Eliminar" onclick="delAppt(${Number(a.id)})"><i class="fa-solid fa-trash"></i></button>`);
+        tr.innerHTML = `<td class="mono">${esc(fmtDT(a.start_at))}</td><td>${esc(a.customer_name)}</td>
+          <td class="mono">${esc(a.customer_phone)}</td><td>${esc(svc)}</td>
+          <td><span class="badge b-${esc(a.status)}">${esc(STLABEL[a.status]||a.status)}</span></td>
+          <td><div class="actions">${acts.join("") || '<span style="color:var(--muted)">—</span>'}</div></td>`;
         body.appendChild(tr);
       });
-    }catch(e){ if(e.status===401){logout();return;} body.innerHTML='<tr><td colspan="6" class="empty">Error: '+e.message+'</td></tr>'; }
+    }catch(e){ if(e.status===401){logout();return;} body.innerHTML='<tr><td colspan="6" class="empty">Error: '+esc(e.message)+'</td></tr>'; }
   }
 
   async function setStatus(id, status){
@@ -259,14 +598,14 @@
       box.innerHTML="";
       list.forEach(s=>{
         const row=document.createElement("div"); row.className="svc-row"+(s.active?"":" inactive");
-        row.innerHTML=`<div class="info"><b>${s.name}</b><span style="color:var(--muted)"><i class="fa-regular fa-clock"></i> ${s.duration_min} min</span><span class="price">${money(s.price)}</span>${s.active?"":'<span class="badge b-cancelled">inactivo</span>'}</div>
-          <div class="actions">
-            <button class="ico warn" title="${s.active?'Desactivar':'Activar'}" onclick="toggleSvc(${s.id},${!s.active})"><i class="fa-solid fa-power-off"></i></button>
-            <button class="ico del" title="Eliminar" onclick="delSvc(${s.id})"><i class="fa-solid fa-trash"></i></button>
-          </div>`;
+        const svcActs = can("services.manage") ? `<div class="actions">
+            <button class="ico warn" title="${s.active?'Desactivar':'Activar'}" onclick="toggleSvc(${Number(s.id)},${!s.active})"><i class="fa-solid fa-power-off"></i></button>
+            <button class="ico del" title="Eliminar" onclick="delSvc(${Number(s.id)})"><i class="fa-solid fa-trash"></i></button>
+          </div>` : "";
+        row.innerHTML=`<div class="info"><b>${esc(s.name)}</b><span style="color:var(--muted)"><i class="fa-regular fa-clock"></i> ${Number(s.duration_min)} min</span><span class="price">${esc(money(s.price))}</span>${s.active?"":'<span class="badge b-cancelled">inactivo</span>'}</div>${svcActs}`;
         box.appendChild(row);
       });
-    }catch(e){ if(e.status===401){logout();return;} box.innerHTML='<div class="empty">Error: '+e.message+'</div>'; }
+    }catch(e){ if(e.status===401){logout();return;} box.innerHTML='<div class="empty">Error: '+esc(e.message)+'</div>'; }
   }
   async function toggleSvc(id, active){
     try{ await api(`/api/admin/services/${id}`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({active})}); loadServices(); }
@@ -295,7 +634,7 @@
   function clearFilters(){ $("fStatus").value=""; $("fDate").value=""; loadAppointments(); }
 
   /* init */
-  if(TOKEN){ showDash(); }
+  boot();
 </script>
 </body>
 </html>

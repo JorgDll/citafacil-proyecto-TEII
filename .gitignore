@@ -17,3 +17,6 @@ env/
 .vscode/
 .idea/
 .DS_Store
+
+# Salidas de las pruebas con navegador (Playwright MCP)
+.playwright-mcp/

@@ -87,7 +87,51 @@ def set_status(db: Session, appt: models.Appointment, status: str) -> models.App
 
 
 def delete_appointment(db: Session, appt: models.Appointment) -> None:
+    db.query(models.AppointmentLink).filter(models.AppointmentLink.appointment_id == appt.id).delete()
     db.delete(appt)
+    db.commit()
+
+
+# ---------- Dispositivos recordados (HU-1) ----------
+def get_device_by_hash(db: Session, token_hash: str) -> Optional[models.DeviceProfile]:
+    return (
+        db.query(models.DeviceProfile)
+        .filter(models.DeviceProfile.token_hash == token_hash)
+        .first()
+    )
+
+
+def create_device(
+    db: Session, token_hash: str, data: schemas.DeviceProfileIn
+) -> models.DeviceProfile:
+    obj = models.DeviceProfile(
+        token_hash=token_hash,
+        customer_name=data.customer_name,
+        customer_phone=data.customer_phone,
+    )
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+def update_device(
+    db: Session, device: models.DeviceProfile, data: schemas.DeviceProfileIn
+) -> models.DeviceProfile:
+    device.customer_name = data.customer_name
+    device.customer_phone = data.customer_phone
+    db.commit()
+    db.refresh(device)
+    return device
+
+
+def touch_device(db: Session, device: models.DeviceProfile) -> None:
+    device.last_used_at = datetime.utcnow()
+    db.commit()
+
+
+def delete_device(db: Session, device: models.DeviceProfile) -> None:
+    db.delete(device)
     db.commit()
 
 

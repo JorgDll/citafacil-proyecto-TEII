@@ -15,7 +15,7 @@ Backend en **Python (FastAPI)** con base de datos **SQL**, API REST **documentad
 - **Recordatorios por WhatsApp**: envío automático (programado) X horas antes de la cita, además de confirmación al reservar.
 - **Panel de administración**: estadísticas, gestión de reservas (confirmar / cancelar / realizar / eliminar) y de servicios (crear / activar / eliminar), protegido por token.
 - **API REST documentada**: Swagger UI interactivo en `/docs`.
-- **Validación de datos**: teléfonos chilenos normalizados a formato E.164, horarios de atención y días cerrados configurables.
+- **Validación de datos**: celulares de cualquier país en formato E.164 (solo móviles, porque los recordatorios van por WhatsApp), con selector de país con búsqueda; horarios de atención y días cerrados configurables.
 - **Listo para desplegar**: Dockerfile, blueprint de Render y configuración por variables de entorno (SQLite en local → PostgreSQL en producción).
 
 ---
@@ -75,21 +75,21 @@ citafacil/
 
 ## 🖥️ Ejecutar en local
 
-Requisitos: Python 3.10+.
+Requisitos: Python 3.10 a 3.12. Con Python 3.14 falla la instalación de las versiones fijadas de `pydantic` (2.7.4) y `psycopg2-binary` (2.9.9); si tu sistema trae uno más nuevo, crea el entorno con 3.12 (por ejemplo `uv venv --python 3.12`).
 
 ```bash
 cd backend
 python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-cp .env.example .env          # ajusta ADMIN_TOKEN y lo que quieras
+cp .env.example .env          # cambia ADMIN_TOKEN (clave de instalación) y lo que quieras
 python seed.py                # carga servicios y citas de ejemplo (opcional)
 python -m uvicorn app.main:app --reload
 ```
 
 - API y documentación: <http://localhost:8000/docs>
-- Frontend: abre `frontend/index.html` en el navegador (usa `http://localhost:8000` por defecto).
-  Panel admin en `frontend/admin.html` (ingresa tu `ADMIN_TOKEN`).
+- Frontend: <http://localhost:8000/app/> (servido por la API; así funciona la cookie del dispositivo recordado).
+  Panel admin en <http://localhost:8000/app/admin.html>: la primera vez pide la clave de instalación (`ADMIN_TOKEN`) para crear al propietario; después se entra con usuario y contraseña (ver *Cuentas del panel*).
 
 > Sin credenciales de Twilio, la app corre en **modo demo**: los mensajes de WhatsApp se registran en el log en vez de enviarse.
 
@@ -110,7 +110,69 @@ python -m uvicorn app.main:app --reload
 | GET  | `/api/admin/stats` | Estadísticas | 🔒 |
 | POST | `/api/admin/reminders/run` | Enviar recordatorios ahora | 🔒 |
 
-🔒 = requiere la cabecera `X-Admin-Token`.
+🔒 = requiere iniciar sesión en el panel y tener el permiso correspondiente (ver *Cuentas del panel*). Desde HU-6 la cabecera `X-Admin-Token` ya no abre la API.
+
+**Cuentas del panel (HU-6)** — cada empleado entra con su usuario y contraseña, y el propietario define qué puede hacer cada uno. Cada acción queda en un registro de actividad.
+
+- **Primer acceso:** mientras no exista ningún usuario, el panel muestra "Crear al propietario" y pide `ADMIN_TOKEN` (cámbialo antes en `.env`). Después ese token ya no abre la API.
+- **Sesión:** cookie `HttpOnly` + `SameSite=Strict`; el servidor guarda solo el SHA-256 del token. Las peticiones que no son GET llevan la cabecera `X-Requested-With: citafacil` (defensa CSRF). Contraseñas con scrypt, bloqueo tras 5 fallos seguidos y cambio de clave obligatorio con contraseñas temporales.
+- **Permisos** (`appointments.view`, `customers.phones`, `appointments.confirm`, `appointments.cancel`, `appointments.delete`, `services.manage`, `analytics.view`, `reminders.run`, `users.manage`, `audit.view`) con roles base ajustables por empleado: Propietario (todo), Gerente (todo menos usuarios), Recepción y Solo consulta. Sin `customers.phones` los teléfonos salen enmascarados (`+507 ****4567`).
+- **Recuperación:** `python manage_users.py list | create-owner <usuario> | reset-password <usuario>` (la contraseña se pide por teclado).
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/admin/auth/setup-status` · POST `/setup` | ¿Falta el propietario? / crearlo con `ADMIN_TOKEN` |
+| POST | `/api/admin/auth/login` · `/logout` · `/password` · GET `/me` | Entrar, salir, cambiar mi contraseña, usuario actual |
+| GET/POST/PATCH | `/api/admin/users` · POST `/{id}/reset-password` · GET `/api/admin/permissions` | Gestión de usuarios y permisos (`users.manage`) |
+| GET | `/api/admin/audit` (+ `/actors`) | Registro de actividad con filtros (`audit.view`); solo lectura |
+
+**Autogestión de la cita (HU-5)** — la confirmación de WhatsApp incluye un enlace personal (`{PUBLIC_BASE_URL}/app/manage.html#t=<token>`) para reprogramar o cancelar sin llamar al negocio. El token va en el fragmento de la URL (no llega a los logs) y el servidor solo guarda su SHA-256. Los endpoints usan la cabecera `X-Manage-Token`. Reglas: hasta `MANAGE_CUTOFF_HOURS` (2) horas antes y máximo `MANAGE_MAX_RESCHEDULES` (2) reprogramaciones. **Cancelar exige escribir "Cancelar cita"** y revoca el enlace (el mismo URL deja de servir); reprogramar devuelve la cita a `pending` para que el negocio la reconfirme.
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/manage` | Detalle de la cita y qué se puede hacer (sin teléfono) |
+| POST | `/api/manage/cancel` `{confirmation}` | Cancela y revoca el enlace; 422 si el texto no es "Cancelar cita" |
+| POST | `/api/manage/reschedule` `{start_at}` | Reprograma (409 si no está libre o fuera de reglas) |
+| GET | `/api/manage/schedule?date=` · `/api/manage/calendar?month=` | Disponibilidad para reprogramar (la propia cita no cuenta como ocupada) |
+
+`POST /api/appointments` ahora devuelve además `manage_url`. En local el enlace apunta a `localhost`: para abrirlo desde un teléfono define `PUBLIC_BASE_URL` con la IP de tu red, un túnel o tu dominio.
+
+**Teléfonos internacionales (HU-4)** — el celular se valida y guarda en E.164 (`+50761234567`). Solo se aceptan **móviles**: los fijos, gratuitos, de tarifa premium y VoIP se rechazan con 422. Los números escritos sin `+` se interpretan con `DEFAULT_COUNTRY`.
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/countries` | Países para el selector: `[{iso, dial_code, example}]` (`example` = móvil de ejemplo en formato local, usado como placeholder) |
+| GET | `/api/config` | Ahora incluye `default_country` |
+
+**Análisis de demanda (HU-3)** — solo admin (🔒). Se calcula contando `appointments` (no canceladas, por fecha de la cita); no hay tablas nuevas. Rango con `range=7d|14d|30d|90d|180d|365d` (trimestre/semestre/año móviles, terminan hoy) o libre con `from` y `to`; `service_ids=1,2` filtra servicios.
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/admin/analytics/services` | Barras: reservas por servicio |
+| GET | `/api/admin/analytics/trend` | Líneas: reservas en el tiempo por servicio (`group_by=day\|week\|month`, automático por defecto) |
+| GET | `/api/admin/analytics/forecast?horizon=14\|30\|90` | Proyección de demanda con banda de incertidumbre |
+
+Los gráficos están en el panel admin (pestañas Barras · Líneas · Proyección, con Chart.js por CDN). Para verlos con datos de prueba: `python seed_history.py` (≈12 meses de citas demo marcadas con `[demo-historial]`; `--reset` las regenera sin tocar reservas reales).
+
+**Calendario y franjas (HU-2)** — muestra todo el horario con lo ocupado bloqueado, en lugar de ocultarlo.
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/schedule?service_id=&date=` | Todas las franjas del día: `{time, available, reason}` (`reason`: `booked` o `past`) |
+| GET | `/api/calendar?service_id=&month=YYYY-MM` | Estado de cada día: `available`, `full`, `closed` o `past` (+ franjas libres) |
+
+`/api/availability` se mantiene igual (solo franjas libres).
+
+**Dispositivo recordado (HU-1)** — reservar sin volver a escribir tus datos, sin login. Se autentica con una cookie HttpOnly; el servidor guarda solo el SHA-256 del token.
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET  | `/api/device/profile` | Datos guardados de este dispositivo (`known:false` si no se reconoce) |
+| POST | `/api/device/remember` | Guarda los datos y emite el token (si el dispositivo ya es conocido, no lo reemplaza) |
+| PUT  | `/api/device/profile` | Actualiza los datos guardados (requiere cookie válida) |
+| DELETE | `/api/device` | Olvida este dispositivo |
+
+El frontend ahora se sirve desde la propia API (mismo origen, necesario para la cookie): abre <http://localhost:8000/app/>.
 
 ---
 
@@ -119,8 +181,14 @@ python -m uvicorn app.main:app --reload
 | Variable | Por defecto | Descripción |
 |----------|-------------|-------------|
 | `DATABASE_URL` | `sqlite:///./citafacil.db` | Conexión a la base de datos |
-| `ADMIN_TOKEN` | `cambia-este-token-admin` | Token del panel admin |
+| `ADMIN_TOKEN` | `cambia-este-token-admin` | Clave de instalación: solo crea al primer propietario (el valor por defecto se rechaza) |
+| `SESSION_HOURS` | `12` | Duración de la sesión del panel |
+| `LOGIN_MAX_ATTEMPTS` / `LOGIN_LOCK_MINUTES` | `5` / `15` | Intentos fallidos antes de bloquear la cuenta y minutos de bloqueo |
+| `PASSWORD_MIN_LENGTH` | `10` | Largo mínimo de las contraseñas |
 | `CORS_ORIGINS` | `*` | Dominios permitidos del frontend |
+| `PUBLIC_BASE_URL` | `http://localhost:8000` | Base del enlace de autogestión que se envía por WhatsApp |
+| `MANAGE_CUTOFF_HOURS` / `MANAGE_MAX_RESCHEDULES` | `2` / `2` | Anticipación mínima y reprogramaciones permitidas |
+| `DEFAULT_COUNTRY` | `CL` | País base ISO para números sin `+` y país preseleccionado (ej. `PA`) |
 | `BUSINESS_NAME` | `Barbería Don Lucho` | Nombre del negocio |
 | `OPEN_HOUR` / `CLOSE_HOUR` | `10` / `20` | Horario de atención |
 | `SLOT_INTERVAL_MINUTES` | `30` | Separación entre horarios |

@@ -1,0 +1,77 @@
+# Pruebas exploratorias de QA
+# Código: a00d137 feat(HU-6): cuentas de administración con permisos y registro de actividad
+# Fecha: 2026-10-28 16:29 -05 · Python: Python 3.12.16
+
+== Concurrencia (HU-2): 20 reservas simultáneas a la misma franja ==
+[PASA ] 201=1 409=19 (esperado 1 y 19)
+
+== QA-01 (HU-2/HU-5): solo inicios de la grilla ==
+[FALLA] reserva 10:13 (fuera de la grilla): esperado 409, obtenido 201 -> {"id":4,"customer_name":"QA","customer_phone":"+50761234567","service_id":1,"start_at":"2026-11-10T10:13:00","
+[PASA ] reserva 10:00:30 (segundos): esperado 409, obtenido 409 -> {"detail":"Ese horario ya no está disponible. Por favor elige otro."}
+[FALLA] reserva 10:30 (en la grilla): esperado 201, obtenido 409 -> {"detail":"Ese horario ya no está disponible. Por favor elige otro."}
+
+== HU-4: teléfonos internacionales ==
+[PASA ] teléfono '+507 6123-4567': esperado 201, obtenido 201 -> {"id":5,"customer_name":"QA","customer_phone":"+50761234567","service_id":3,"start_at":"2026-11-17T10:00:00","
+[PASA ] teléfono '61234567': esperado 201, obtenido 201 -> {"id":6,"customer_name":"QA","customer_phone":"+50761234567","service_id":3,"start_at":"2026-11-17T11:00:00","
+[PASA ] teléfono '+507 223-4567': esperado 422, obtenido 422 -> {"detail":[{"type":"value_error","loc":["body","customer_phone"],"msg":"Value error, Solo se aceptan números m
+[PASA ] teléfono '+1 800 555 0100': esperado 422, obtenido 422 -> {"detail":[{"type":"value_error","loc":["body","customer_phone"],"msg":"Value error, Solo se aceptan números m
+[PASA ] teléfono 'abc': esperado 422, obtenido 422 -> {"detail":[{"type":"value_error","loc":["body","customer_phone"],"msg":"Value error, Número de teléfono inváli
+[PASA ] teléfono '+56 9 4291 6570': esperado 201, obtenido 201 -> {"id":7,"customer_name":"QA","customer_phone":"+56942916570","service_id":3,"start_at":"2026-11-17T15:00:00","
+
+== HU-5: autogestión por enlace ==
+[PASA ] reserva Corte + Barba 12:00: esperado 201, obtenido 201 -> {"id":8,"customer_name":"<script>alert(1)</script> Ana","customer_phone":"+50761112222","service_id":2,"start_
+[PASA ] detalle con el token: esperado 200, obtenido 200 -> {"business_name":"Barbería Don Lucho","service_name":"Corte + Barba","service_duration_min":45,"service_price"
+[PASA ] token por query string (no cabecera): esperado 404, obtenido 404 -> {"detail":"Enlace inválido o vencido."}
+[PASA ] reprogramar 12:30 (solapa consigo misma, 45 min): esperado 200, obtenido 200 -> {"business_name":"Barbería Don Lucho","service_name":"Corte + Barba","service_duration_min":45,"service_price"
+[PASA ] reprogramar a 11:00 (ocupada): esperado 409, obtenido 409 -> {"detail":"Ese horario ya no está disponible. Elige otro."}
+[PASA ] reprogramar fuera de horario 19:45: esperado 409, obtenido 409 -> {"detail":"Ese horario ya no está disponible. Elige otro."}
+[FALLA] QA-01: reprogramar a 13:07: esperado 409, obtenido 200 -> {"business_name":"Barbería Don Lucho","service_name":"Corte + Barba","service_duration_min":45,"service_price"
+[FALLA] disponibilidad tras mover a 12:30: 11:30 libre, 12:00 ocupada por la propia cita -> ['10:00', '11:30', '12:00', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00']
+[FALLA] reprogramar #2 a 14:00: esperado 200, obtenido 409 -> {"detail":"Alcanzaste el máximo de 2 reprogramaciones. Puedes cancelar y reservar de nuevo."}
+[PASA ] reprogramar #3 (máximo 2): esperado 409, obtenido 409 -> {"detail":"Alcanzaste el máximo de 2 reprogramaciones. Puedes cancelar y reservar de nuevo."}
+[PASA ] cancelar sin texto de confirmación: esperado 422, obtenido 422 -> {"detail":[{"type":"missing","loc":["body","confirmation"],"msg":"Field required","input":{}}]}
+[PASA ] cancelar con '  cancelar   CITA ': esperado 200, obtenido 200 -> {"detail":"Cita cancelada. El horario quedó libre."}
+[PASA ] token revocado tras cancelar: esperado 404, obtenido 404 -> {"detail":"Enlace inválido o vencido."}
+
+== HU-6: cuentas, permisos y auditoría ==
+[PASA ] X-Admin-Token antiguo: esperado 401, obtenido 401 -> {"detail":"Inicia sesión para continuar."}
+[PASA ] instalación con clave incorrecta: esperado 403, obtenido 403 -> {"detail":"La clave de instalación (ADMIN_TOKEN) es incorrecta."}
+[PASA ] instalación correcta: esperado 200, obtenido 200 -> {"id":1,"username":"dueno","display_name":"Dueño QA","role":"owner","role_label":"Propietario","permissions":[
+[PASA ] instalación repetida: esperado 409, obtenido 409 -> {"detail":"Ya existe un propietario; la instalación inicial ya se hizo."}
+[PASA ] crear recepcionista: esperado 201, obtenido 201 -> {"id":2,"username":"rosa","display_name":"Rosa","role":"reception","role_label":"Recepción","permissions":["ap
+[PASA ] QA-03: crear servicio con HTML en el nombre: esperado 201, obtenido 201 -> {"name":"<img src=x onerror=alert(1)>","duration_min":30,"price":1000,"active":true,"id":6}
+[PASA ] login recepcionista: esperado 200, obtenido 200 -> {"id":2,"username":"rosa","display_name":"Rosa","role":"reception","role_label":"Recepción","permissions":["ap
+[PASA ] listar antes de cambiar la clave temporal: esperado 403, obtenido 403 -> {"detail":"Debes cambiar tu contraseña antes de continuar."}
+[PASA ] cambiar clave: esperado 200, obtenido 200 -> {"id":2,"username":"rosa","display_name":"Rosa","role":"reception","role_label":"Recepción","permissions":["ap
+[PASA ] listar citas: esperado 200, obtenido 200 -> [{"id":1,"customer_name":"Camila Rojas","customer_phone":"+56987654321","service_id":1,"start_at":"2026-10-29T
+[PASA ] confirmar cita pendiente: esperado 200, obtenido 200 -> {"id":3,"customer_name":"QA","customer_phone":"+50761230011","service_id":1,"start_at":"2026-11-03T11:00:00","
+[PASA ] eliminar cita (sin permiso): esperado 403, obtenido 403 -> {"detail":"No tienes permiso para esta acción."}
+[PASA ] crear servicio (sin permiso): esperado 403, obtenido 403 -> {"detail":"No tienes permiso para esta acción."}
+[PASA ] ver auditoría (sin permiso): esperado 403, obtenido 403 -> {"detail":"No tienes permiso para esta acción."}
+[PASA ] darse permisos a sí misma: esperado 403, obtenido 403 -> {"detail":"No tienes permiso para esta acción."}
+[PASA ] dueño ve la auditoría: esperado 200, obtenido 200 -> {"total":10,"limit":50,"offset":0,"items":[{"id":10,"created_at":"2026-10-28T16:29:07.588383","actor_type":"st
+        acciones registradas: ['appointment.confirmed', 'appointment.customer_cancelled', 'appointment.customer_rescheduled', 'auth.login', 'auth.password_changed', 'service.created', 'user.created']
+[PASA ] la auditoría registra la confirmación de la recepcionista, su acceso, su cambio de clave y su alta
+[PASA ] dueño desactiva a la recepcionista: esperado 200, obtenido 200 -> {"id":2,"username":"rosa","display_name":"Rosa","role":"reception","role_label":"Recepción","permissions":["ap
+[PASA ] sesión abierta de la recepcionista tras desactivarla: esperado 401, obtenido 401 -> {"detail":"Inicia sesión para continuar."}
+[PASA ] QA-02: disparar recordatorios (ver log del servidor): esperado 200, obtenido 200 -> {"candidatas":2,"enviados":2}
+[PASA ] clave correcta tras 5 fallos (bloqueo): esperado 429, obtenido 429 -> {"detail":"Cuenta bloqueada temporalmente. Intenta de nuevo en 15 min."}
+[PASA ] usuario inexistente (mismo mensaje): esperado 401, obtenido 401 -> {"detail":"Usuario o contraseña incorrectos."}
+
+TOTAL: 5 caso(s) fallan
+
+# Recordatorios enviados (log del servidor, modo demo WhatsApp)
+Hola Camila Rojas, te recordamos tu cita en Barbería Don Lucho:
+✂️ Corte de pelo
+🗓️ jueves 29-10 a las 11:00
+
+Si no puedes asistir, responde este mensaje. ¡Gracias!
+2026-10-28 16:29:07,622 INFO citafacil.notifications: [WhatsApp DEMO] Para +56912345678:
+Hola Diego Soto, te recordamos tu cita en Barbería Don Lucho:
+✂️ Corte + Barba
+🗓️ jueves 29-10 a las 12:00
+
+Si no puedes asistir, responde este mensaje. ¡Gracias!
+2026-10-28 16:29:07,622 INFO citafacil.reminders: Recordatorios: 2 enviados de 2 candidatas.
+INFO:     127.0.0.1:39286 - "POST /api/admin/reminders/run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39302 - "POST /api/admin/auth/login HTTP/1.1" 401 Unauthorized

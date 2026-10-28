@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icons/7.2.3/css/flag-icons.min.css" />
 <style>
   :root{
     --bg:#0d1117; --bg-soft:#161b22; --card:#161b22; --border:#232a34;
@@ -68,11 +69,6 @@
   .field{margin-bottom:16px}
   input[type=date]{color-scheme:dark}
 
-  .slots{display:flex;flex-wrap:wrap;gap:9px}
-  .slot{background:var(--bg-soft);border:1.5px solid var(--border);border-radius:10px;padding:9px 15px;cursor:pointer;
-    font-family:'JetBrains Mono',monospace;font-size:.9rem;transition:all .16s}
-  .slot:hover{border-color:var(--accent);color:var(--accent-2)}
-  .slot.sel{background:var(--grad);border-color:transparent;color:#fff}
   .empty{color:var(--muted);font-size:.9rem;padding:10px 0;display:flex;align-items:center;gap:9px}
 
   .btn{display:inline-flex;align-items:center;gap:9px;padding:13px 24px;border-radius:12px;font-weight:700;font-size:.98rem;
@@ -90,11 +86,48 @@
   .msg{border-radius:10px;padding:11px 14px;font-size:.9rem;margin-top:12px;display:none}
   .msg.err{display:block;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);color:#fecaca}
 
+  .known{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:rgba(34,197,94,.1);
+    border:1px solid rgba(34,197,94,.3);color:#bbf7d0;border-radius:10px;padding:10px 14px;font-size:.88rem;margin-bottom:16px}
+  .known a{color:var(--accent-2);font-weight:600;cursor:pointer}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:none;align-items:center;
+    justify-content:center;padding:20px;z-index:50}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;max-width:420px;width:100%;
+    box-shadow:var(--shadow);text-align:center}
+  .modal .ic{font-size:2.6rem;color:var(--ok);margin-bottom:10px}
+  .modal h3{font-size:1.2rem;margin-bottom:8px}
+  .modal p{color:var(--muted);font-size:.93rem;margin-bottom:20px}
+  .modal .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+  .phone-row{display:flex;gap:8px;align-items:stretch}
+  .phone-row > input{flex:1;min-width:0}
+  .cc{position:relative;flex:0 0 auto}
+  .cc-btn{height:100%;display:flex;align-items:center;gap:8px;background:var(--bg);border:1.5px solid var(--border);border-radius:11px;
+    color:var(--text);font:inherit;padding:0 12px;cursor:pointer;white-space:nowrap;transition:border-color .2s,box-shadow .2s}
+  .cc-btn:hover,.cc-btn[aria-expanded=true]{border-color:var(--accent)}
+  .cc-btn:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+  .cc-btn .dial,.cc-opt .dial{font-family:'JetBrains Mono',monospace;color:var(--accent-2);font-size:.88rem}
+  .cc-btn .sep,.cc-opt .sep{color:var(--border)}
+  .cc-btn .iso,.cc-opt .iso{font-weight:700;font-size:.88rem}
+  .cc-btn .fi,.cc-opt .fi{width:1.33em;line-height:1;border-radius:2px;flex:0 0 auto}
+  .cc-btn i.fa-chevron-down{font-size:.7rem;color:var(--muted)}
+  .cc-panel{position:absolute;top:calc(100% + 6px);left:0;z-index:40;width:min(360px,86vw);background:var(--card);
+    border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:8px}
+  .cc-panel[hidden]{display:none}
+  .cc-panel input{margin-bottom:6px;padding:9px 12px;font-size:.9rem}
+  .cc-list{list-style:none;max-height:260px;overflow-y:auto}
+  .cc-opt{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:.9rem}
+  .cc-opt .nm{color:var(--muted);font-size:.82rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cc-opt:hover,.cc-opt.active{background:var(--bg-soft)}
+  .cc-opt[aria-selected=true]{box-shadow:inset 3px 0 0 var(--accent)}
+  .cc-none{color:var(--muted);font-size:.88rem;padding:12px 10px}
+
   footer{border-top:1px solid var(--border);padding:22px 0;text-align:center;color:var(--muted);font-size:.85rem}
   footer a{color:var(--accent-2);font-weight:600;cursor:pointer}
   .spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;flex:0 0 auto}
   @keyframes sp{to{transform:rotate(360deg)}}
 </style>
+<link rel="stylesheet" href="scheduler.css" />
 </head>
 <body>
 <header>
@@ -134,8 +167,22 @@
     <div class="card disabled" id="cardWhen">
       <h2><i class="fa-solid fa-calendar-day"></i> Elige día y hora</h2>
       <p class="hint" id="whenHint">Primero selecciona un servicio.</p>
-      <div class="field"><label for="dateInput">Fecha</label><input type="date" id="dateInput" /></div>
-      <div><label>Horarios disponibles</label><div class="slots" id="slots"><div class="empty">Elige una fecha.</div></div></div>
+      <div class="field">
+        <label>Fecha</label>
+        <div class="cal">
+          <div class="cal-head">
+            <button type="button" class="cal-nav" id="calPrev" aria-label="Mes anterior">&#8249;</button>
+            <b id="calTitle"></b>
+            <button type="button" class="cal-nav" id="calNext" aria-label="Mes siguiente">&#8250;</button>
+          </div>
+          <div class="cal-grid cal-dow"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+          <div class="cal-grid" id="calGrid"><div class="empty" style="grid-column:1/-1">Selecciona un servicio.</div></div>
+          <div class="cal-legend">
+            <span><i class="l-av"></i>Con horarios</span><span><i class="l-fu"></i>Lleno</span><span><i class="l-ot"></i>Cerrado / pasado</span>
+          </div>
+        </div>
+      </div>
+      <div><label>Horarios <span style="font-weight:400">(los tachados ya est&aacute;n ocupados)</span></label><div class="slots" id="slots"><div class="empty">Elige un d&iacute;a del calendario.</div></div></div>
     </div>
 
     <!-- Paso 3: Datos -->
@@ -143,8 +190,28 @@
       <h2><i class="fa-solid fa-user"></i> Tus datos</h2>
       <p class="hint">Para confirmarte la reserva por WhatsApp.</p>
       <div class="summary" id="summary"></div>
+      <div class="known" id="knownBanner" style="display:none">
+        <span><i class="fa-solid fa-circle-user"></i> Usando los datos guardados en este dispositivo.</span>
+        <a id="useOther">Usar otros datos</a>
+      </div>
       <div class="field"><label for="name">Nombre y apellido</label><input id="name" placeholder="Ej: Camila Rojas" autocomplete="name" /></div>
-      <div class="field"><label for="phone">Celular (WhatsApp)</label><input id="phone" placeholder="+56 9 XXXX XXXX" inputmode="tel" autocomplete="tel" /></div>
+      <div class="field">
+        <label for="phoneNum">Celular (WhatsApp)</label>
+        <div class="phone-row">
+          <div class="cc" id="cc">
+            <button type="button" class="cc-btn" id="ccBtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Elegir país del celular">
+              <span class="dial" id="ccDial">+</span><span class="sep">|</span><span class="fi" id="ccFlag"></span><span class="sep">|</span><span class="iso" id="ccIso">--</span>
+              <i class="fa-solid fa-chevron-down"></i>
+            </button>
+            <div class="cc-panel" id="ccPanel" hidden>
+              <input id="ccSearch" type="text" role="combobox" aria-expanded="true" aria-controls="ccList" aria-autocomplete="list"
+                     placeholder="Buscar país, ISO o código…" autocomplete="off" spellcheck="false" />
+              <ul class="cc-list" id="ccList" role="listbox" aria-label="Países"></ul>
+            </div>
+          </div>
+          <input id="phoneNum" placeholder="Número de celular" inputmode="tel" autocomplete="tel-national" />
+        </div>
+      </div>
       <div class="field"><label for="notes">Nota (opcional)</label><input id="notes" placeholder="Algo que debamos saber" /></div>
       <button class="btn" id="confirmBtn"><i class="fa-solid fa-check"></i> Confirmar reserva</button>
       <div class="msg" id="formMsg"></div>
@@ -156,11 +223,27 @@
         <div class="ic"><i class="fa-solid fa-circle-check"></i></div>
         <h3>¡Reserva confirmada!</h3>
         <p id="doneMsg"></p>
-        <button class="btn" onclick="location.reload()"><i class="fa-solid fa-plus"></i> Hacer otra reserva</button>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+          <a class="btn ghost" id="manageLink" href="#" style="display:none"><i class="fa-solid fa-calendar-pen"></i> Cambiar o cancelar mi cita</a>
+          <button class="btn" onclick="location.reload()"><i class="fa-solid fa-plus"></i> Hacer otra reserva</button>
+        </div>
       </div>
     </div>
   </div>
 </main>
+
+<div class="modal-bg" id="rememberModal" role="dialog" aria-modal="true" aria-labelledby="rmTitle">
+  <div class="modal">
+    <div class="ic"><i class="fa-solid fa-circle-check"></i></div>
+    <h3 id="rmTitle"></h3>
+    <p id="rmText"></p>
+    <div class="actions">
+      <button class="btn" id="rmYes"><i class="fa-solid fa-floppy-disk"></i> <span id="rmYesLbl">Sí, guardar</span></button>
+      <button class="btn ghost" id="rmNo">No, gracias</button>
+    </div>
+    <div class="msg" id="rmMsg"></div>
+  </div>
+</div>
 
 <footer>
   <div class="wrap">
@@ -169,11 +252,13 @@
   </div>
 </footer>
 
+<script src="scheduler.js"></script>
 <script>
   /* ====== CONFIG ====== */
   // Cambia esta URL por la de tu backend en producción (Render).
   // También puedes pasar ?api=https://tu-api.onrender.com en la URL.
-  const DEFAULT_API = "https://citafacil-api.onrender.com";
+  // Servido por FastAPI (http://localhost:8000/app/) la API es el mismo origen.
+  const DEFAULT_API = location.protocol.startsWith("http") ? location.origin : "https://citafacil-api.onrender.com";
   const qp = new URLSearchParams(location.search).get("api");
   if (qp) localStorage.setItem("citafacil_api", qp);
   const API = (localStorage.getItem("citafacil_api") || DEFAULT_API).replace(/\/$/, "");
@@ -185,19 +270,27 @@
   }
 
   const money = n => "$" + (n||0).toLocaleString("es-CL");
+  // Escapa texto del servidor (p. ej. el nombre del servicio) antes de ponerlo en innerHTML.
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
   // fetch con timeout opcional (AbortController) para no colgarse en un arranque en frío.
   async function api(path, opts, timeoutMs){
     const ctrl = new AbortController();
     const t = timeoutMs ? setTimeout(()=>ctrl.abort(), timeoutMs) : null;
     try{
-      const r = await fetch(API + path, Object.assign({}, opts||{}, {signal: ctrl.signal}));
-      if(!r.ok){ let d; try{d=await r.json()}catch(e){}; throw new Error((d&&d.detail) || ("Error "+r.status)); }
+      const r = await fetch(API + path, Object.assign({credentials:"same-origin"}, opts||{}, {signal: ctrl.signal}));
+      if(!r.ok){
+        let d; try{d=await r.json()}catch(e){}
+        let msg = d && d.detail;
+        // Los 422 de FastAPI llegan como lista de {msg}: se muestran como texto legible.
+        if(Array.isArray(msg)) msg = msg.map(x=>String(x.msg||"").replace(/^Value error, /,"")).filter(Boolean).join(" · ");
+        throw new Error(msg || ("Error "+r.status));
+      }
       return r.status===204 ? null : r.json();
     } finally { if(t) clearTimeout(t); }
   }
 
-  const state = { service:null, date:null, time:null, services:[] };
+  const state = { service:null, date:null, time:null, services:[], device:null };
   const $ = id => document.getElementById(id);
 
   function setStep(n){
@@ -250,8 +343,190 @@
       }
     }catch(e){ /* usa defaults */ }
 
-    // fecha mínima = hoy
-    $("dateInput").min = new Date().toISOString().slice(0,10);
+    await loadCountries();
+    loadDevice();
+  }
+
+  /* ====== Teléfono internacional (HU-4) ====== */
+  // Selector de país con búsqueda: "+código | bandera | ISO". La búsqueda acepta nombre
+  // (es/en), ISO y código de marcación, sin tildes. Los nombres salen de Intl.DisplayNames.
+  const cc = { list:[], byIso:{}, iso:null, shown:[], active:-1 };
+  const norm = s => String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim();
+  let dnEs = null, dnEn = null;
+  try{ dnEs = new Intl.DisplayNames(["es"], {type:"region"}); dnEn = new Intl.DisplayNames(["en"], {type:"region"}); }catch(e){ /* solo ISO */ }
+  const regionName = (dn, iso) => { try{ const n = dn && dn.of(iso); return n && n!==iso ? n : ""; }catch(e){ return ""; } };
+  const defaultIso = () => (window.__cfg && window.__cfg.default_country) || "CL";
+
+  async function loadCountries(){
+    let raw = [];
+    try{ raw = await api("/api/countries", null, 15000); }catch(e){ /* sin lista: selector deshabilitado */ }
+    cc.list = raw.map(c=>{
+      const es = regionName(dnEs, c.iso), en = regionName(dnEn, c.iso);
+      return { iso:c.iso, dial:c.dial_code, example:c.example||"", es:es||c.iso, en,
+               key: norm(`${es} ${en} ${c.iso}`) };
+    }).sort((a,b)=>a.es.localeCompare(b.es, "es"));
+    cc.byIso = Object.fromEntries(cc.list.map(c=>[c.iso, c]));
+    $("ccBtn").disabled = !cc.list.length;
+    selectCountry(cc.byIso[defaultIso()] ? defaultIso() : (cc.list[0] && cc.list[0].iso));
+  }
+
+  function selectCountry(iso){
+    const c = cc.byIso[iso]; if(!c) return;
+    cc.iso = iso;
+    $("ccDial").textContent = "+" + c.dial;
+    $("ccFlag").className = "fi fi-" + iso.toLowerCase();
+    $("ccIso").textContent = iso;
+    $("ccBtn").setAttribute("aria-label", `País del celular: ${c.es}, +${c.dial}. Cambiar`);
+    // El placeholder muestra un móvil de ejemplo con el formato y la longitud de ese país.
+    $("phoneNum").placeholder = c.example ? "Ej: " + c.example : "Número de celular";
+  }
+
+  // Orden de relevancia de una búsqueda (menor = mejor; -1 = no coincide).
+  function matchRank(c, q, digits){
+    if(digits){
+      if(c.dial === q) return 0;
+      return c.dial.startsWith(q) ? 2 : -1;
+    }
+    const iso = norm(c.iso);
+    if(iso === q) return 0;
+    const names = [norm(c.es), norm(c.en)];
+    if(names.some(n=>n.startsWith(q))) return 1;
+    if(names.some(n=>n.split(/[\s-]+/).some(w=>w.startsWith(q)))) return 2;
+    if(iso.startsWith(q)) return 3;
+    return c.key.includes(q) ? 4 : -1;
+  }
+
+  function filterCountries(raw){
+    const q = norm(raw).replace(/^\+/, "");
+    if(!q) return cc.list;
+    const digits = /^\d+$/.test(q);
+    return cc.list.map(c=>({c, r:matchRank(c, q, digits)})).filter(x=>x.r>=0)
+      .sort((a,b)=>a.r-b.r || a.c.es.localeCompare(b.c.es, "es")).map(x=>x.c);
+  }
+
+  function renderCountries(){
+    const ul = $("ccList"); ul.innerHTML = "";
+    if(!cc.shown.length){ ul.innerHTML = '<li class="cc-none" role="presentation">Sin resultados.</li>'; return; }
+    cc.shown.forEach((c, i)=>{
+      const li = document.createElement("li");
+      li.className = "cc-opt" + (i===cc.active ? " active" : "");
+      li.id = "cc-opt-" + c.iso; li.setAttribute("role", "option");
+      li.setAttribute("aria-selected", c.iso===cc.iso ? "true" : "false");
+      li.innerHTML = `<span class="dial">+${c.dial}</span><span class="sep">|</span><span class="fi fi-${c.iso.toLowerCase()}"></span>`
+        + `<span class="sep">|</span><span class="iso">${c.iso}</span><span class="nm"></span>`;
+      li.querySelector(".nm").textContent = c.es;                 // textContent: el nombre nunca se interpreta como HTML
+      li.addEventListener("mousedown", e=>{ e.preventDefault(); pickCountry(c.iso); });
+      ul.appendChild(li);
+    });
+    const act = cc.shown[cc.active];
+    $("ccSearch").setAttribute("aria-activedescendant", act ? "cc-opt-" + act.iso : "");
+  }
+
+  function setActive(i){
+    if(!cc.shown.length) return;
+    cc.active = (i + cc.shown.length) % cc.shown.length;
+    renderCountries();
+    const el = $("ccList").children[cc.active]; if(el) el.scrollIntoView({block:"nearest"});
+  }
+
+  function openCountries(){
+    $("ccPanel").hidden = false; $("ccBtn").setAttribute("aria-expanded", "true");
+    $("ccSearch").value = ""; cc.shown = cc.list;
+    cc.active = Math.max(0, cc.shown.findIndex(c=>c.iso===cc.iso));
+    renderCountries();
+    const el = $("ccList").children[cc.active]; if(el) el.scrollIntoView({block:"center"});
+    $("ccSearch").focus();
+  }
+
+  function closeCountries(focusBtn){
+    $("ccPanel").hidden = true; $("ccBtn").setAttribute("aria-expanded", "false");
+    if(focusBtn) $("ccBtn").focus();
+  }
+
+  function pickCountry(iso){ selectCountry(iso); closeCountries(true); $("phoneNum").focus(); }
+
+  $("ccBtn").addEventListener("click", ()=> $("ccPanel").hidden ? openCountries() : closeCountries(false));
+  $("ccBtn").addEventListener("keydown", e=>{ if(e.key==="ArrowDown" && $("ccPanel").hidden){ e.preventDefault(); openCountries(); } });
+  $("ccSearch").addEventListener("input", ()=>{
+    cc.shown = filterCountries($("ccSearch").value); cc.active = cc.shown.length ? 0 : -1; renderCountries();
+    $("ccList").scrollTop = 0;     // los mejores resultados siempre arriba (la lista conservaba el scroll previo)
+  });
+  $("ccSearch").addEventListener("keydown", e=>{
+    if(e.key==="ArrowDown"){ e.preventDefault(); setActive(cc.active+1); }
+    else if(e.key==="ArrowUp"){ e.preventDefault(); setActive(cc.active-1); }
+    else if(e.key==="Enter"){ e.preventDefault(); const c = cc.shown[cc.active]; if(c) pickCountry(c.iso); }
+    else if(e.key==="Escape"){ e.preventDefault(); closeCountries(true); }
+    else if(e.key==="Tab"){ closeCountries(false); }
+  });
+  document.addEventListener("mousedown", e=>{ if(!$("cc").contains(e.target)) closeCountries(false); });
+
+  // Número que se envía al servidor: "+<código> <número>" (el servidor quita espacios y el 0 local).
+  function composePhone(){
+    const raw = $("phoneNum").value.trim();
+    if(!raw) return "";
+    if(/^(\+|00)/.test(raw)) return raw.replace(/^00/, "+");     // número internacional pegado completo
+    const c = cc.byIso[cc.iso];
+    return c ? `+${c.dial} ${raw}` : raw;
+  }
+
+  // HU-1: repuebla país y número desde el perfil guardado en este dispositivo.
+  function applyPhone(p){
+    if(p.phone_country && cc.byIso[p.phone_country]){
+      selectCountry(p.phone_country); $("phoneNum").value = p.phone_national || "";
+    } else $("phoneNum").value = p.customer_phone || "";
+  }
+
+  /* ====== Dispositivo recordado (HU-1) ====== */
+  // Prellena nombre/celular si la cookie HttpOnly de este dispositivo es válida.
+  async function loadDevice(){
+    try{
+      const p = await api("/api/device/profile", null, 15000);
+      if(p && p.known){
+        state.device = p;
+        $("name").value = p.customer_name;
+        applyPhone(p);
+        $("knownBanner").style.display = "flex";
+      }
+    }catch(e){ /* sin prellenado: formulario normal */ }
+  }
+
+  $("useOther").addEventListener("click", ()=>{
+    $("name").value = ""; $("phoneNum").value = "";
+    selectCountry(defaultIso());
+    $("knownBanner").style.display = "none";
+    $("name").focus();
+  });
+
+  // Modal tras reservar. Resuelve cuando el usuario elige o falla el guardado.
+  function askRemember(appt){
+    const dev = state.device;
+    let mode = null;                       // "save" | "update"
+    if(!dev) mode = "save";
+    else if(dev.customer_name !== appt.customer_name || dev.customer_phone !== appt.customer_phone) mode = "update";
+    if(!mode) return;
+
+    $("rmTitle").textContent = mode==="save" ? "¡Reserva realizada con éxito!" : "¡Reserva realizada!";
+    $("rmText").textContent = mode==="save"
+      ? "¿Quieres guardar tus datos en este dispositivo para reservar más rápido la próxima vez?"
+      : "Usaste datos distintos a los guardados en este dispositivo. ¿Quieres actualizarlos?";
+    $("rmYesLbl").textContent = mode==="save" ? "Sí, guardar" : "Sí, actualizar";
+    $("rmMsg").className = "msg";
+    const modal = $("rememberModal"), yes = $("rmYes");
+    const close = ()=>{ modal.classList.remove("open"); yes.onclick = $("rmNo").onclick = null; };
+    $("rmNo").onclick = close;
+    yes.onclick = async ()=>{
+      yes.disabled = true;
+      const body = JSON.stringify({customer_name: appt.customer_name, customer_phone: appt.customer_phone});
+      try{
+        await api(mode==="save" ? "/api/device/remember" : "/api/device/profile",
+          {method: mode==="save" ? "POST" : "PUT", headers:{"Content-Type":"application/json"}, body}, 15000);
+        close();
+      }catch(e){
+        $("rmMsg").className = "msg err"; $("rmMsg").textContent = "No se pudo guardar: " + e.message;
+      }finally{ yes.disabled = false; }
+    };
+    modal.classList.add("open");
+    yes.focus();
   }
 
   function renderServices(){
@@ -261,74 +536,42 @@
     state.services.forEach(s=>{
       const el = document.createElement("div");
       el.className = "svc";
-      el.innerHTML = `<div class="n">${s.name}</div><div class="meta"><span><i class="fa-regular fa-clock"></i> ${s.duration_min} min</span><span class="price">${money(s.price)}</span></div>`;
+      el.innerHTML = `<div class="n">${esc(s.name)}</div><div class="meta"><span><i class="fa-regular fa-clock"></i> ${s.duration_min} min</span><span class="price">${money(s.price)}</span></div>`;
       el.onclick = ()=>selectService(s, el);
       g.appendChild(el);
     });
   }
 
+  /* ====== Calendario mensual y franjas (HU-2): módulo compartido scheduler.js ====== */
+  const sch = createScheduler({
+    els:{ prev:$("calPrev"), next:$("calNext"), title:$("calTitle"), grid:$("calGrid"), slots:$("slots") },
+    ready: ()=>!!state.service,
+    fetchMonth: ym => api(`/api/calendar?service_id=${state.service.id}&month=${ym}`, null, 65000),
+    fetchSlots: date => api(`/api/schedule?service_id=${state.service.id}&date=${date}`, null, 65000),
+    onDay: date => { state.date = date; state.time = null; setStep(2); },
+    onSlot: t => {
+      state.time = t;
+      const d = new Date(state.date+"T"+t);
+      const fecha = d.toLocaleDateString("es-CL",{weekday:"long",day:"2-digit",month:"long"});
+      $("summary").innerHTML = `<b>${esc(state.service.name)}</b> · ${fecha} a las <b>${t}</b> · ${money(state.service.price)}`;
+      setStep(3);
+      $("cardWho").scrollIntoView({behavior:"smooth", block:"center"});
+    }
+  });
+
   function selectService(s, el){
-    state.service = s; state.time=null;
+    state.service = s; state.time = null; state.date = null;
     document.querySelectorAll(".svc").forEach(x=>x.classList.remove("sel"));
     el.classList.add("sel");
     $("whenHint").textContent = `${s.name} · ${s.duration_min} min · ${money(s.price)}`;
+    sch.reset();
     setStep(2);
-    if($("dateInput").value) loadSlots();
+    sch.loadCalendar();   // la duración del servicio cambia qué días/horas caben
     $("cardWhen").scrollIntoView({behavior:"smooth", block:"center"});
   }
 
-  $("dateInput").addEventListener("change", loadSlots);
-
-  // Token incremental: solo la última petición pinta el resultado (evita que una
-  // respuesta vieja pise a la nueva cuando se teclea la fecha dígito a dígito).
-  let slotsReq = 0;
-
-  async function loadSlots(){
-    if(!state.service) return;
-    const date = $("dateInput").value;
-    // Ignorar fechas incompletas/ inválidas o anteriores a hoy (al teclear se generan
-    // años intermedios como 0002, 0020… que no deben consultarse).
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
-    const min = $("dateInput").min;
-    const box = $("slots");
-    if(min && date < min){
-      box.innerHTML = '<div class="empty">Elige una fecha desde hoy en adelante.</div>';
-      return;
-    }
-
-    state.date = date; state.time = null;
-    const myReq = ++slotsReq;
-    box.innerHTML = '<div class="empty"><span class="spin"></span> Buscando horarios…</div>';
-    try{
-      const list = await api(`/api/availability?service_id=${state.service.id}&date=${date}`, null, 65000);
-      if(myReq !== slotsReq) return; // llegó tarde: hay una petición más nueva
-      if(!Array.isArray(list) || !list.length){
-        box.innerHTML='<div class="empty">No hay horarios ese día. Prueba otra fecha.</div>'; return;
-      }
-      box.innerHTML="";
-      list.forEach(t=>{
-        const b=document.createElement("div"); b.className="slot"; b.textContent=t;
-        b.onclick=()=>selectSlot(t,b); box.appendChild(b);
-      });
-    }catch(e){
-      if(myReq !== slotsReq) return;
-      box.innerHTML='<div class="empty">Error cargando horarios. Prueba de nuevo.</div>';
-    }
-  }
-
-  function selectSlot(t, b){
-    state.time=t;
-    document.querySelectorAll(".slot").forEach(x=>x.classList.remove("sel"));
-    b.classList.add("sel");
-    const d = new Date(state.date+"T"+t);
-    const fecha = d.toLocaleDateString("es-CL",{weekday:"long",day:"2-digit",month:"long"});
-    $("summary").innerHTML = `<b>${state.service.name}</b> · ${fecha} a las <b>${t}</b> · ${money(state.service.price)}`;
-    setStep(3);
-    $("cardWho").scrollIntoView({behavior:"smooth", block:"center"});
-  }
-
   $("confirmBtn").addEventListener("click", async ()=>{
-    const name = $("name").value.trim(), phone = $("phone").value.trim();
+    const name = $("name").value.trim(), phone = composePhone();
     const msg = $("formMsg"); msg.className="msg";
     if(name.length<2 || !phone){ msg.className="msg err"; msg.textContent="Completa tu nombre y celular."; return; }
     if(!state.service || !state.date || !state.time){ msg.className="msg err"; msg.textContent="Elige servicio, día y hora."; return; }
@@ -336,18 +579,20 @@
     try{
       const payload={customer_name:name, customer_phone:phone, service_id:state.service.id,
         start_at:`${state.date}T${state.time}:00`, notes:$("notes").value.trim()};
-      await api("/api/appointments",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}, 65000);
+      const appt = await api("/api/appointments",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}, 65000);
       const d=new Date(state.date+"T"+state.time);
       const fecha=d.toLocaleDateString("es-CL",{weekday:"long",day:"2-digit",month:"long"});
-      $("doneMsg").innerHTML=`Te esperamos el <b>${fecha}</b> a las <b>${state.time}</b>.<br>Te enviamos la confirmación por WhatsApp a ${phone}.`;
+      $("doneMsg").innerHTML=`Te esperamos el <b>${fecha}</b> a las <b>${state.time}</b>.<br>Te enviamos la confirmación por WhatsApp a ${appt.customer_phone}.`;
+      if(appt.manage_url){ $("manageLink").href = appt.manage_url; $("manageLink").style.display = ""; }   // HU-5
       ["cardSvc","cardWhen","cardWho"].forEach(id=>$(id).style.display="none");
       document.querySelector(".steps").style.display="none";
       $("cardDone").style.display="block";
       $("cardDone").scrollIntoView({behavior:"smooth",block:"center"});
+      askRemember(appt);
     }catch(e){
       msg.className="msg err";
       msg.textContent = e.message==="Error 409" ? "Ese horario ya fue tomado. Elige otro." : e.message;
-      loadSlots();
+      sch.loadSlots(); sch.loadCalendar();
     }finally{ btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-check"></i> Confirmar reserva'; }
   });
 

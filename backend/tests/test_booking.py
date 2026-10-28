@@ -1,34 +1,14 @@
 """Tests de la lógica de reservas y de la API."""
-import os
+# La BD de prueba y la fixture `fresh_db` viven en conftest.py.
+from datetime import timedelta
 
-# Usar una base de datos de prueba aislada ANTES de importar la app.
-# (Se usa /tmp para evitar límites de E/S de sistemas de archivos de red.)
-os.environ["DATABASE_URL"] = "sqlite:////tmp/citafacil_test.db"
-os.environ["ADMIN_TOKEN"] = "test-token"
+import pytest
+from fastapi.testclient import TestClient
 
-from datetime import timedelta  # noqa: E402
-
-import pytest  # noqa: E402
-from fastapi.testclient import TestClient  # noqa: E402
-
-from app import models  # noqa: E402
-from app.database import Base, SessionLocal, engine  # noqa: E402
-from app.main import app  # noqa: E402
-from app.utils import PhoneError, local_now, normalize_cl_phone  # noqa: E402
+from app.main import app
+from app.utils import PhoneError, local_now, normalize_cl_phone
 
 client = TestClient(app)
-
-
-@pytest.fixture(autouse=True)
-def fresh_db():
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
-    db.add(models.Service(name="Corte", duration_min=30, price=8000, active=True))
-    db.commit()
-    db.close()
-    yield
-    Base.metadata.drop_all(bind=engine)
 
 
 def _next_open_day_at(hour: int):
@@ -81,7 +61,7 @@ def test_availability_removes_booked_slot():
         "/api/appointments",
         json={
             "customer_name": "Ana",
-            "customer_phone": "942916570",
+            "customer_phone": "+56 9 4291 6570",
             "service_id": sid,
             "start_at": day.isoformat(),
         },
@@ -106,11 +86,8 @@ def test_reject_invalid_phone_on_booking():
 
 
 # ---------- Administración ----------
-def test_admin_auth():
-    assert client.get("/api/admin/appointments").status_code == 422  # falta cabecera
-    assert client.get(
-        "/api/admin/appointments", headers={"X-Admin-Token": "malo"}
-    ).status_code == 401  # token incorrecto
-    assert client.get(
-        "/api/admin/appointments", headers={"X-Admin-Token": "test-token"}
-    ).status_code == 200  # correcto
+def test_admin_auth(staff_client):
+    # HU-6: ya no hay token compartido; hace falta una sesión de usuario.
+    assert client.get("/api/admin/appointments").status_code == 401                          # sin sesión
+    assert client.get("/api/admin/appointments", headers={"X-Admin-Token": "test-token"}).status_code == 401
+    assert staff_client("dueno").get("/api/admin/appointments").status_code == 200           # con sesión
