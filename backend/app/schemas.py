@@ -4,10 +4,10 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .models import VALID_STATUSES
-from .utils import PhoneError, normalize_cl_phone, to_local_naive
+from .utils import PhoneError, normalize_phone, phone_parts, to_local_naive
 
 
 # ---------- Servicios ----------
@@ -46,7 +46,7 @@ class AppointmentCreate(BaseModel):
     @classmethod
     def _validate_phone(cls, v: str) -> str:
         try:
-            return normalize_cl_phone(v)
+            return normalize_phone(v)
         except PhoneError as e:
             raise ValueError(str(e))
 
@@ -85,7 +85,7 @@ class DeviceProfileIn(BaseModel):
     @classmethod
     def _validate_phone(cls, v: str) -> str:
         try:
-            return normalize_cl_phone(v)
+            return normalize_phone(v)
         except PhoneError as e:
             raise ValueError(str(e))
 
@@ -94,7 +94,15 @@ class DeviceProfileOut(BaseModel):
     known: bool
     customer_name: Optional[str] = None
     customer_phone: Optional[str] = None
+    phone_country: Optional[str] = None     # ISO del país del celular (repuebla el selector)
+    phone_national: Optional[str] = None    # número sin código de país
     detail: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _split_phone(self):
+        if self.customer_phone and not self.phone_country:
+            self.phone_country, self.phone_national = phone_parts(self.customer_phone)
+        return self
 
 
 class AppointmentStatusUpdate(BaseModel):
@@ -173,8 +181,15 @@ class ForecastOut(BaseModel):
 
 
 # ---------- Otros ----------
+class CountryOut(BaseModel):
+    iso: str
+    dial_code: str
+    example: str = ""
+
+
 class ConfigOut(BaseModel):
     business_name: str
+    default_country: str
     timezone: str
     currency: str
     open_hour: int

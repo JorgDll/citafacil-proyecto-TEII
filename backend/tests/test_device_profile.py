@@ -38,9 +38,9 @@ def _rows():
 
 def test_happy_path_remember_and_prefill():
     d = _device()
-    assert d.get("/api/device/profile").json() == {
-        "known": False, "customer_name": None, "customer_phone": None, "detail": None,
-    }
+    unknown = d.get("/api/device/profile").json()
+    assert unknown["known"] is False
+    assert unknown["customer_name"] is None and unknown["customer_phone"] is None
 
     assert _book(d).status_code == 201
     r = d.post("/api/device/remember", json=PROFILE)

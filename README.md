@@ -15,7 +15,7 @@ Backend en **Python (FastAPI)** con base de datos **SQL**, API REST **documentad
 - **Recordatorios por WhatsApp**: envío automático (programado) X horas antes de la cita, además de confirmación al reservar.
 - **Panel de administración**: estadísticas, gestión de reservas (confirmar / cancelar / realizar / eliminar) y de servicios (crear / activar / eliminar), protegido por token.
 - **API REST documentada**: Swagger UI interactivo en `/docs`.
-- **Validación de datos**: teléfonos chilenos normalizados a formato E.164, horarios de atención y días cerrados configurables.
+- **Validación de datos**: celulares de cualquier país en formato E.164 (solo móviles, porque los recordatorios van por WhatsApp), con selector de país con búsqueda; horarios de atención y días cerrados configurables.
 - **Listo para desplegar**: Dockerfile, blueprint de Render y configuración por variables de entorno (SQLite en local → PostgreSQL en producción).
 
 ---
@@ -112,6 +112,13 @@ python -m uvicorn app.main:app --reload
 
 🔒 = requiere la cabecera `X-Admin-Token`.
 
+**Teléfonos internacionales (HU-4)** — el celular se valida y guarda en E.164 (`+50761234567`). Solo se aceptan **móviles**: los fijos, gratuitos, de tarifa premium y VoIP se rechazan con 422. Los números escritos sin `+` se interpretan con `DEFAULT_COUNTRY`.
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/countries` | Países para el selector: `[{iso, dial_code, example}]` (`example` = móvil de ejemplo en formato local, usado como placeholder) |
+| GET | `/api/config` | Ahora incluye `default_country` |
+
 **Análisis de demanda (HU-3)** — solo admin (🔒). Se calcula contando `appointments` (no canceladas, por fecha de la cita); no hay tablas nuevas. Rango con `range=7d|14d|30d|90d|180d|365d` (trimestre/semestre/año móviles, terminan hoy) o libre con `from` y `to`; `service_ids=1,2` filtra servicios.
 
 | Método | Ruta | Descripción |
@@ -151,6 +158,7 @@ El frontend ahora se sirve desde la propia API (mismo origen, necesario para la 
 | `DATABASE_URL` | `sqlite:///./citafacil.db` | Conexión a la base de datos |
 | `ADMIN_TOKEN` | `cambia-este-token-admin` | Token del panel admin |
 | `CORS_ORIGINS` | `*` | Dominios permitidos del frontend |
+| `DEFAULT_COUNTRY` | `CL` | País base ISO para números sin `+` y país preseleccionado (ej. `PA`) |
 | `BUSINESS_NAME` | `Barbería Don Lucho` | Nombre del negocio |
 | `OPEN_HOUR` / `CLOSE_HOUR` | `10` / `20` | Horario de atención |
 | `SLOT_INTERVAL_MINUTES` | `30` | Separación entre horarios |

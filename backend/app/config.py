@@ -6,6 +6,8 @@ y en producción (PostgreSQL en Render) sin tocar nada.
 """
 from __future__ import annotations
 
+import phonenumbers
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -18,6 +20,8 @@ class Settings(BaseSettings):
     business_name: str = "Barbería Don Lucho"
     business_timezone: str = "America/Santiago"
     currency: str = "CLP"
+    # País base (ISO 3166-1 alpha-2): interpreta números sin "+" y preselecciona el selector.
+    default_country: str = "CL"
     open_hour: int = 10          # apertura (hora local, 24h)
     close_hour: int = 20         # cierre (hora local, 24h)
     slot_interval_minutes: int = 30
@@ -43,6 +47,14 @@ class Settings(BaseSettings):
     twilio_whatsapp_from: str = ""      # ej: "whatsapp:+14155238886"
     reminder_hours_before: int = 24     # cuántas horas antes recordar
     reminder_poll_minutes: int = 15     # cada cuánto revisa el programador
+
+    @field_validator("default_country")
+    @classmethod
+    def _valid_country(cls, v: str) -> str:
+        v = v.strip().upper()
+        if v not in phonenumbers.SUPPORTED_REGIONS:
+            raise ValueError(f"DEFAULT_COUNTRY inválido: {v!r}. Usa un código ISO de país (ej. PA, CL, US).")
+        return v
 
     # --- Helpers derivados ---
     @property

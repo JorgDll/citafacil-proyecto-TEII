@@ -12,6 +12,7 @@ from ..availability import build_day_slots, generate_slots, is_slot_free, month_
 from ..config import settings
 from ..database import get_db
 from ..notifications import confirmation_message, send_whatsapp
+from ..utils import list_countries
 
 router = APIRouter(prefix="/api", tags=["Público"])
 
@@ -20,6 +21,7 @@ router = APIRouter(prefix="/api", tags=["Público"])
 def get_config():
     return schemas.ConfigOut(
         business_name=settings.business_name,
+        default_country=settings.default_country,
         timezone=settings.business_timezone,
         currency=settings.currency,
         open_hour=settings.open_hour,
@@ -27,6 +29,11 @@ def get_config():
         slot_interval_minutes=settings.slot_interval_minutes,
         closed_weekdays=sorted(settings.closed_weekdays_set),
     )
+
+
+@router.get("/countries", response_model=list[schemas.CountryOut], summary="Países para el selector de teléfono")
+def get_countries():
+    return list_countries()
 
 
 @router.get("/services", response_model=list[schemas.ServiceOut], summary="Servicios activos")

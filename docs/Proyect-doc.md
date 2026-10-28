@@ -56,7 +56,7 @@ citafacil/
 | `notifications.py` | Textos de confirmación y recordatorio; `send_whatsapp` (Twilio o demo) |
 | `reminders.py` | `run_reminders` y `run_reminders_job` (cada `REMINDER_POLL_MINUTES`) |
 | `auth.py` | `require_admin`: cabecera `X-Admin-Token` contra `ADMIN_TOKEN` |
-| `utils.py` | `normalize_cl_phone`, `local_now`, `to_local_naive` |
+| `utils.py` | `normalize_phone` (E.164 internacional, solo móviles), `phone_parts`, `list_countries`, `normalize_cl_phone` (regla chilena lenient, solo para `DEFAULT_COUNTRY=CL`), `local_now`, `to_local_naive` |
 | `routers/public.py` | Endpoints públicos |
 | `routers/admin.py` | Endpoints de administración (router completo protegido) |
 | `routers/scores.py` | Ranking del juego; define su propio modelo `Score` |
@@ -81,6 +81,14 @@ citafacil/
 | DELETE | `/appointments/{id}` | Eliminar |
 | GET | `/stats` | Contadores por estado y próximas |
 | POST | `/reminders/run` | Ejecutar recordatorios ahora |
+
+### Teléfonos internacionales (HU-4)
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/countries` | `[{iso, dial_code, example}]` desde las regiones de `phonenumbers` (245), sin el pseudo-código `001`; `example` es un móvil de ejemplo en formato internacional sin el código (se omite si no valida) |
+| GET | `/config` | Incluye `default_country` |
+
+Validación (`utils.normalize_phone`): solo caracteres de número (sin letras), `phonenumbers.is_valid_number` y tipo `MOBILE` o `FIXED_LINE_OR_MOBILE` (en EE. UU./Canadá la numeración móvil y fija comparte rangos). Con `+` el país sale del número; sin `+` se usa `DEFAULT_COUNTRY` (para `CL` rige la regla anterior). El perfil de dispositivo devuelve además `phone_country` y `phone_national` para repoblar el selector.
 
 ### Análisis de demanda (`/api/admin/analytics`, HU-3, requiere `X-Admin-Token`)
 | Método | Ruta | Descripción |
@@ -131,6 +139,7 @@ Parámetros comunes: `range` (7d, 14d, 30d, 90d, 180d, 365d; por defecto 30d) o 
 **Frontend.**
 - Se sirve desde FastAPI en `http://localhost:8000/app/` (mismo origen que la API).
 - URL de la API: `?api=` → `localStorage.citafacil_api` → origen actual (o Render si se abre por `file://`).
+- HU-4: el celular es un selector de país con búsqueda (`+código | bandera | ISO`, banderas de flag-icons por CDN) más el número nacional; el placeholder cambia con el país y busca por nombre (es/en), ISO o código. Se envía `+<código> <número>`.
 - HU-3: el panel admin tiene la tarjeta "Análisis de demanda" (Chart.js 4.4.1 por CDN) con pestañas Barras, Líneas y Proyección, filtros de rango (presets y fechas libres) y chips de servicios.
 - HU-2: el selector de fecha es un calendario mensual propio (`/api/calendar`); al elegir día se muestran todas las franjas (`/api/schedule`): libres clicables, ocupadas tachadas y horas pasadas atenuadas.
 - HU-1: al cargar, `GET /api/device/profile` prellena nombre y celular; tras reservar, un modal ofrece guardar (dispositivo nuevo) o actualizar (datos distintos) los datos.
@@ -154,7 +163,7 @@ Parámetros comunes: `range` (7d, 14d, 30d, 90d, 180d, 365d; por defecto 30d) o 
 
 `backend/tests/conftest.py` fija la BD temporal (portable a Windows) y la fixture `fresh_db`. `backend/tests/test_device_profile.py` (3 tests, HU-1): camino feliz, varios dispositivos sin sobreescribir token, y token inválido/olvidado.
 
-`backend/tests/test_schedule.py` (3 tests, HU-2) y `backend/tests/test_analytics.py` (4 tests, HU-3).
+`backend/tests/test_phone_international.py` (3 tests, HU-4), `backend/tests/test_schedule.py` (3 tests, HU-2) y `backend/tests/test_analytics.py` (4 tests, HU-3).
 
 `backend/tests/test_booking.py` (6 tests): formatos de teléfono válidos e inválidos, creación y conflicto 409, disponibilidad que excluye horas reservadas, rechazo de teléfono inválido (422) y autenticación admin.
 
@@ -175,7 +184,7 @@ Ejecutar: `cd backend; python -m pytest`.
 - **Integridad.** `DELETE /services/{id}` con citas asociadas puede fallar por la clave foránea sin manejo. `PATCH` de estado no valida transiciones.
 - **Programador.** Corre dentro de cada proceso: con varios workers los recordatorios se duplicarían. Si falla el envío de la confirmación, se ignora.
 - **Recordatorio.** El texto pide "responder este mensaje", pero no hay webhook de entrada de Twilio.
-- **Localización fija a Chile.** Teléfono `+56 9`, textos en español, zona horaria.
+- **Localización.** El teléfono ya es internacional (HU-4); siguen siendo de Chile por defecto la zona horaria y la moneda, y los textos están en español.
 - **Coherencia.** `scores.py` mezcla otro producto en la API y el README no lo documenta. El Dockerfile usa Python 3.11 y Render 3.12.6.
 - **Tests.** Usan `sqlite:////tmp/...` (probablemente inválido en Windows) y asumen domingo cerrado.
 
