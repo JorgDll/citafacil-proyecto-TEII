@@ -57,6 +57,6 @@ uvicorn app.main:app --reload       # http://localhost:8000/app/
 
 ## Riesgos conocidos (no bloquean)
 
-QA-06 con varios workers (el candado solo protege dentro de un proceso), QA-07 (bloqueo de cuenta por terceros), QA-08 (auditoría fuera de la transacción), QA-09 (zona horaria y moneda de Chile en `.env.example`), QA-10 (`datetime.utcnow` deprecado), QA-11 (reabrir una cita cancelada no comprueba la franja). Detalle en `docs/qa/Reporte-QA.md` §6.
+QA-06 con varios workers (el candado solo protege dentro de un proceso), QA-07 (bloqueo de cuenta por terceros), QA-08 (auditoría fuera de la transacción), QA-09 (zona horaria y moneda de Chile en `.env.example`), QA-10 (`datetime.utcnow` deprecado), QA-11 (reabrir una cita cancelada no comprueba la franja). Detalle en `docs/qa/Reporte-QA.md` §6. Seguimiento en #1.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)

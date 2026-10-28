@@ -40,7 +40,7 @@ Registro del uso de IA durante el sprint, en el formato que pide el enunciado. C
 | 20 | Código QA | Claude Code (Opus) | Corregir QA-06 | `availability.booking_lock` alrededor de "comprobar + insertar" al reservar y al reprogramar | **Aceptado con alcance limitado:** protege dentro de un proceso. El bloqueo en la BD para varios workers queda en el issue de riesgos |
 | 21 | Testing QA | Claude Code (Opus) | Test de regresión de QA-06 | Primera versión: 1 ronda. Una vez pasó contra el código con bug (§2, caso J) | **Modificado:** 5 rondas; sin el candado falla 10 de 10 y con él pasa 5 de 5 (33 tests en total) |
 | 22 | Evidencia QA | Claude Code (Opus) | Scripts reproducibles y salidas guardadas | `docs/qa/evidencia/`: pytest, exploratorias y concurrencia, antes y después | Aceptado. Al generarla, la IA creyó que faltaba la confirmación en la auditoría, pero era su script: las citas del `seed` ya vienen confirmadas (§2, caso K) |
-| 23 | Riesgos | Claude Code (Opus) | Registrar los riesgos menores | Issue de GitHub con QA-06 (varios workers) y QA-07 a QA-10 | Aceptado: se atienden en el siguiente sprint (ver §6) |
+| 23 | Riesgos | Claude Code (Opus) | Registrar los riesgos menores | [Issue #1](https://github.com/JorgDll/citafacil-proyecto-TEII/issues/1) con QA-06 (varios workers) y QA-07 a QA-11 | Aceptado: se atienden en el siguiente sprint (ver §6) |
 
 ---
 
@@ -115,7 +115,7 @@ Los riesgos menores que no se corrigen en este sprint se registraron en un issue
 | QA-10 | `datetime.utcnow()` deprecado (632 warnings) | Info |
 | QA-11 | Reabrir desde el panel una cita cancelada no comprueba si su franja ya fue tomada | Baja |
 
-Issue: _pendiente de enlace_
+Issue: [#1 — QA: riesgos menores pendientes](https://github.com/JorgDll/citafacil-proyecto-TEII/issues/1)
 
 ## 7. Evidencia del uso de IA
 
