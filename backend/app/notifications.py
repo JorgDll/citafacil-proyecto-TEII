@@ -52,13 +52,18 @@ def cancellation_message(business: str, customer_name: str, service_name: str, s
     )
 
 
-def reminder_message(business: str, customer_name: str, service_name: str, start_at: datetime) -> str:
-    return (
+def reminder_message(
+    business: str, customer_name: str, service_name: str, start_at: datetime, manage_url: str | None = None
+) -> str:
+    text = (
         f"Hola {customer_name}, te recordamos tu cita en {business}:\n"
         f"✂️ {service_name}\n"
         f"🗓️ {_fmt_dt(start_at)}\n\n"
         f"Si no puedes asistir, responde este mensaje. ¡Gracias!"
     )
+    if manage_url:
+        text += f"\n\n🔗 ¿Necesitas cambiarla o cancelarla? Hazlo aquí: {manage_url}"
+    return text
 
 
 def send_whatsapp(to_e164: str, body: str) -> dict:

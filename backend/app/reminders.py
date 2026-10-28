@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from . import models
 from .config import settings
 from .database import SessionLocal
+from .manage import build_manage_url, rotate_link
 from .notifications import reminder_message, send_whatsapp
 from .utils import local_now
 
@@ -34,7 +35,9 @@ def run_reminders(db: Session) -> dict:
     enviados = 0
     for cita in citas:
         service_name = cita.service.name if cita.service else "tu servicio"
-        body = reminder_message(settings.business_name, cita.customer_name, service_name, cita.start_at)
+        # Enlace de autogestión (HU-5): el token se rota porque solo guardamos su hash.
+        manage_url = build_manage_url(rotate_link(db, cita))
+        body = reminder_message(settings.business_name, cita.customer_name, service_name, cita.start_at, manage_url)
         result = send_whatsapp(cita.customer_phone, body)
         if result.get("ok"):
             cita.reminder_sent = True

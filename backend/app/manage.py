@@ -34,6 +34,22 @@ def create_link(db: Session, appt: models.Appointment) -> str:
     return token
 
 
+def rotate_link(db: Session, appt: models.Appointment) -> str:
+    """Token nuevo para un mensaje posterior (p. ej. el recordatorio).
+
+    Como solo se guarda el hash, el token original no se puede reenviar: se reemplaza
+    en la misma fila (se conserva `reschedule_count`) y el enlace anterior deja de servir.
+    Una cita sin enlace (anterior a HU-5) recibe uno nuevo.
+    """
+    link = db.query(models.AppointmentLink).filter_by(appointment_id=appt.id).first()
+    if link is None:
+        return create_link(db, appt)
+    token = new_token()
+    link.token_hash = hash_token(token)
+    db.commit()
+    return token
+
+
 def current_link(
     x_manage_token: Optional[str] = Header(None, alias="X-Manage-Token"),
     db: Session = Depends(get_db),
