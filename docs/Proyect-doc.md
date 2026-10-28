@@ -166,7 +166,7 @@ Parámetros comunes: `range` (7d, 14d, 30d, 90d, 180d, 365d; por defecto 30d) o 
 
 **Reserva.** `POST /appointments` valida servicio activo → `is_slot_free` (día abierto, dentro de horario, en el futuro, sin solape con citas no canceladas) → crea cita `pending` → envía confirmación por WhatsApp.
 
-**Recordatorios.** Cada `REMINDER_POLL_MINUTES` (15) el programador busca citas `pending` o `confirmed`, con `reminder_sent=False`, que empiecen dentro de las próximas `REMINDER_HOURS_BEFORE` (24) horas. Envía y marca `reminder_sent` solo si el envío fue exitoso.
+**Recordatorios.** Cada `REMINDER_POLL_MINUTES` (15) el programador busca citas `pending` o `confirmed`, con `reminder_sent=False`, que empiecen dentro de las próximas `REMINDER_HOURS_BEFORE` (24) horas. Envía y marca `reminder_sent` solo si el envío fue exitoso. Desde la revisión de QA (QA-02) el recordatorio incluye el enlace de autogestión de HU-5: como solo se guarda el hash del token, `manage.rotate_link` genera uno nuevo en la misma fila (conserva las reprogramaciones usadas) y el enlace anterior deja de servir.
 
 **Frontend.**
 - Se sirve desde FastAPI en `http://localhost:8000/app/` (mismo origen que la API).

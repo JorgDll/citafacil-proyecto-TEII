@@ -75,7 +75,7 @@ citafacil/
 
 ## 🖥️ Ejecutar en local
 
-Requisitos: Python 3.10+.
+Requisitos: Python 3.10 a 3.12. Con Python 3.14 falla la instalación de las versiones fijadas de `pydantic` (2.7.4) y `psycopg2-binary` (2.9.9); si tu sistema trae uno más nuevo, crea el entorno con 3.12 (por ejemplo `uv venv --python 3.12`).
 
 ```bash
 cd backend

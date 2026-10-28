@@ -48,7 +48,7 @@ Verificación manual en navegador (BD temporal): regresión de `index.html` tras
 
 ## Limitaciones conocidas
 - Con el proyecto solo en local, el enlace apunta a `localhost` y no abre desde un teléfono hasta definir `PUBLIC_BASE_URL`.
-- Las citas anteriores a esta HU no tienen enlace, y los recordatorios no lo llevan (el token no se puede regenerar porque solo se guarda el hash).
+- ~~Las citas anteriores a esta HU no tienen enlace, y los recordatorios no lo llevan.~~ **Corregido en QA (QA-02):** el recordatorio rota el token y envía un enlace nuevo, también a citas anteriores a HU-5. Ver `docs/qa/Reporte-QA.md`.
 - Sin límite de intentos sobre el token (256 bits). La carrera entre dos reprogramaciones simultáneas a la misma franja se resuelve como en las reservas (comprobar y luego escribir, sin restricción única en la BD).
 - No probado en el navegador: la vista dentro de las 2 h previas, la 3.ª reprogramación y el ancho móvil (sí por tests de API).
 - En modo demo (sin Twilio) el enlace aparece en el log del servidor y en la tarjeta de éxito, no llega por WhatsApp.
