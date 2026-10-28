@@ -41,6 +41,7 @@ Registro del uso de IA durante el sprint, en el formato que pide el enunciado. C
 | 21 | Testing QA | Claude Code (Opus) | Test de regresión de QA-06 | Primera versión: 1 ronda. Una vez pasó contra el código con bug (§2, caso J) | **Modificado:** 5 rondas; sin el candado falla 10 de 10 y con él pasa 5 de 5 (33 tests en total) |
 | 22 | Evidencia QA | Claude Code (Opus) | Scripts reproducibles y salidas guardadas | `docs/qa/evidencia/`: pytest, exploratorias y concurrencia, antes y después | Aceptado. Al generarla, la IA creyó que faltaba la confirmación en la auditoría, pero era su script: las citas del `seed` ya vienen confirmadas (§2, caso K) |
 | 23 | Riesgos | Claude Code (Opus) | Registrar los riesgos menores | [Issue #1](https://github.com/JorgDll/citafacil-proyecto-TEII/issues/1) con QA-06 (varios workers) y QA-07 a QA-11 | Aceptado: se atienden en el siguiente sprint (ver §6) |
+| 24 | Revisión | Claude Code (Opus) | Abrir el PR y dejar la revisión de QA | [PR #2](https://github.com/JorgDll/citafacil-proyecto-TEII/pull/2) con una [revisión](https://github.com/JorgDll/citafacil-proyecto-TEII/pull/2#pullrequestreview-5690040938) de 12 comentarios en línea | Aceptado; la aprobación final queda para el reviewer humano |
 
 ---
 

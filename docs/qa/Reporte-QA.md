@@ -206,4 +206,4 @@ El developer ya probó en el navegador los flujos principales de cada HU. Quedan
 
 **Aprobado con correcciones.** Las 6 HU cumplen su objetivo. Los incumplimientos de criterios (QA-01, QA-02 y QA-06, la doble reserva) y el XSS (QA-03) quedan corregidos y cubiertos por tests en `qa/revision-historias`. La desviación de HU-6 (sesión en cookie en lugar de JWT) se acepta como decisión humana documentada. QA-06 con varios workers y QA-07 a QA-11 quedan como riesgos conocidos en el [issue #1](https://github.com/JorgDll/citafacil-proyecto-TEII/issues/1) para el siguiente sprint.
 
-Recomendación: fusionar `qa/revision-historias` (que contiene todo `feature/historias-usuario-v2`) en `main` mediante el Pull Request descrito en `docs/qa/Pull-Request.md`.
+Recomendación: fusionar `qa/revision-historias` (que contiene todo `feature/historias-usuario-v2`) en `main` mediante el [Pull Request #2](https://github.com/JorgDll/citafacil-proyecto-TEII/pull/2), que ya tiene la [revisión de QA](https://github.com/JorgDll/citafacil-proyecto-TEII/pull/2#pullrequestreview-5690040938) y espera la aprobación del reviewer.

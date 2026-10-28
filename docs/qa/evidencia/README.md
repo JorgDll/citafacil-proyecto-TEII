@@ -52,6 +52,16 @@ Script: [`scripts/qa_concurrencia.py`](scripts/qa_concurrencia.py). Hace 20 rond
 | [`08-ia-resumen-de-hallazgos.png`](capturas-ia/08-ia-resumen-de-hallazgos.png) | Resumen entregado al humano: QA-01 a QA-03 y entregables (en ese momento eran 32 tests; después se agregó QA-06) |
 | [`09-ia-detecta-qa06-doble-reserva.png`](capturas-ia/09-ia-detecta-qa06-doble-reserva.png) | Script de concurrencia y hallazgo de QA-06: hasta 15 reservas por franja. Se sube a severidad alta |
 
+## 5. Revisión en GitHub (Pull Request e issue)
+
+| Elemento | Enlace | Contenido |
+|---|---|---|
+| Pull Request | [#2 — HU-1 a HU-6 + correcciones de QA](https://github.com/JorgDll/citafacil-proyecto-TEII/pull/2) | `qa/revision-historias` → `main`, con la descripción de [`../Pull-Request.md`](../Pull-Request.md) |
+| Revisión de QA | [Review en el PR #2](https://github.com/JorgDll/citafacil-proyecto-TEII/pull/2#pullrequestreview-5690040938) | Veredicto, tabla antes/después y **12 comentarios en línea** sobre las correcciones (QA-01, 02, 03, 06) y los riesgos abiertos (QA-07, 08, 09, 11) |
+| Issue de riesgos | [#1](https://github.com/JorgDll/citafacil-proyecto-TEII/issues/1) | QA-06 con varios workers, QA-07 a QA-11, con evidencia y propuesta para cada uno |
+
+GitHub no permite aprobar un PR propio, así que la revisión de QA queda como *comentario*. La **aprobación** corresponde al reviewer (tercer integrante del grupo).
+
 ## Cómo reproducir
 
 ```bash
