@@ -4,7 +4,7 @@
 |---|---|
 | Proyecto | CitaFácil (Tópicos Especiales II — Proyecto #1) |
 | Rol | QA (rotación: Developer → **QA** → Reviewer) |
-| Responsable QA | Chrisvlj |
+| Responsable QA | Christian Valdespino (Chrisvlj) |
 | Fecha | 2026-10-28 |
 | Rama revisada | `feature/historias-usuario-v2` @ `a00d137` |
 | Rama de QA | `qa/revision-historias` (correcciones + documentación) |

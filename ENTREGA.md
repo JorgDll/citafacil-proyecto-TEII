@@ -7,7 +7,7 @@
 | Aplicación elegida | CitaFácil (opción 4: HTML/CSS/JS · FastAPI + SQLAlchemy + Pydantic · SQLite/PostgreSQL) |
 | Repositorio | https://github.com/JorgDll/citafacil-proyecto-TEII |
 | Herramienta de IA | Claude Code (CLI de escritorio): Claude Sonnet 5.5 para el desarrollo y Claude Opus 5.5 para QA |
-| Roles | Developer: JorgDll · QA: Chrisvlj · Reviewer: [nombre del reviewer] |
+| Equipo y roles | Developer: Jorge de Leon (JorgDll) · QA: Christian Valdespino (Chrisvlj) · Reviewer: Eriel Tensu |
 
 ## Restricciones del proyecto → dónde se demuestran
 

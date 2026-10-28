@@ -6,9 +6,9 @@ Registro del uso de IA durante el sprint, en el formato que pide el enunciado. C
 
 | Herramienta | Modelo | Quién la usó | Para qué |
 |---|---|---|---|
-| Claude Code (CLI de escritorio) | Claude Sonnet 5.5 | Developer (JorgDll) | Análisis del repo, planes por HU, código, tests y documentación (commits con `Co-Authored-By: Claude Sonnet 5.5`) |
+| Claude Code (CLI de escritorio) | Claude Sonnet 5.5 | Developer: Jorge de Leon (JorgDll) | Análisis del repo, planes por HU, código, tests y documentación (commits con `Co-Authored-By: Claude Sonnet 5.5`) |
 | Playwright (MCP dentro de Claude Code) | — | Developer | Verificación de cada HU en el navegador |
-| Claude Code (CLI de escritorio) | Claude Opus 5.5 | QA (Chrisvlj) | Revisión contra el PDF, pruebas exploratorias, correcciones de QA, este log y el reporte |
+| Claude Code (CLI de escritorio) | Claude Opus 5.5 | QA: Christian Valdespino (Chrisvlj) | Revisión contra el PDF, pruebas exploratorias, correcciones de QA, este log y el reporte |
 
 **Forma de trabajo:** para cada HU, la IA primero analizaba el código existente y escribía un **plan** (`docs/historias-de-usuario/HU-x/Plan-HU-x.md`). El developer lo aprobaba o corregía tomando las "decisiones del usuario" que figuran en cada plan, y solo entonces se implementaba. Al terminar, la IA escribía el `Resultado-HU-x.md`. Así se cumple la indicación del PDF de analizar el proyecto antes de pedirle a la IA que modifique código.
 
