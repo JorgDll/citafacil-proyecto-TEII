@@ -128,3 +128,23 @@ def test_qa02_reminder_creates_link_for_appointments_without_one(clock, sent):
     (_, body), = sent
     h = _token(body.split("Hazlo aquí: ")[1].strip())
     assert client.get("/api/manage", headers=h).json()["start_at"] == THU_11
+
+
+# ---------- QA-06: reservas simultáneas a la misma franja ----------
+def test_qa06_concurrent_bookings_create_a_single_appointment():
+    from concurrent.futures import ThreadPoolExecutor
+
+    def book(i):
+        # Un cliente por hilo y sin `with`: el `with` arrancaría el programador en cada uno.
+        return TestClient(app).post("/api/appointments", json={
+            "customer_name": f"Carrera {i}", "customer_phone": PHONE, "service_id": 1, "start_at": THU_11,
+        }).status_code
+
+    with ThreadPoolExecutor(20) as ex:
+        codes = list(ex.map(book, range(20)))
+    assert codes.count(201) == 1 and codes.count(409) == 19, codes
+    db = SessionLocal()
+    try:
+        assert db.query(models.Appointment).count() == 1
+    finally:
+        db.close()

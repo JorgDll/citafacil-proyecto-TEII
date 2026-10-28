@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from .. import crud, schemas
-from ..availability import build_day_slots, generate_slots, is_slot_free, month_overview
+from ..availability import booking_lock, build_day_slots, generate_slots, is_slot_free, month_overview
 from ..config import settings
 from ..database import get_db
 from .. import manage
@@ -92,13 +92,14 @@ def create_appointment(payload: schemas.AppointmentCreate, db: Session = Depends
     service = crud.get_service(db, payload.service_id)
     if not service or not service.active:
         raise HTTPException(status_code=404, detail="Servicio no encontrado.")
-    if not is_slot_free(db, service, payload.start_at):
-        raise HTTPException(
-            status_code=409,
-            detail="Ese horario ya no está disponible. Por favor elige otro.",
-        )
-    end_at = payload.start_at + timedelta(minutes=service.duration_min)
-    appt = crud.create_appointment(db, payload, service, end_at)
+    with booking_lock:
+        if not is_slot_free(db, service, payload.start_at):
+            raise HTTPException(
+                status_code=409,
+                detail="Ese horario ya no está disponible. Por favor elige otro.",
+            )
+        end_at = payload.start_at + timedelta(minutes=service.duration_min)
+        appt = crud.create_appointment(db, payload, service, end_at)
 
     # Enlace personal para que el cliente cambie o cancele su cita (HU-5)
     manage_url = manage.build_manage_url(manage.create_link(db, appt))

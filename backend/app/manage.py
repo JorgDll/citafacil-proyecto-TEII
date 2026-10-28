@@ -13,7 +13,7 @@ from fastapi import Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from . import models
-from .availability import is_slot_free
+from .availability import booking_lock, is_slot_free
 from .config import settings
 from .database import get_db
 from .device import hash_token, new_token
@@ -102,15 +102,16 @@ def reschedule(db: Session, link: models.AppointmentLink, new_start: datetime) -
     appt = link.appointment
     if new_start == appt.start_at:
         raise HTTPException(status_code=409, detail="Elige un horario distinto al actual.")
-    if not is_slot_free(db, appt.service, new_start, exclude_id=appt.id):
-        raise HTTPException(status_code=409, detail="Ese horario ya no está disponible. Elige otro.")
+    with booking_lock:
+        if not is_slot_free(db, appt.service, new_start, exclude_id=appt.id):
+            raise HTTPException(status_code=409, detail="Ese horario ya no está disponible. Elige otro.")
 
-    appt.start_at = new_start
-    appt.end_at = new_start + timedelta(minutes=appt.service.duration_min)
-    appt.status = models.STATUS_PENDING       # el negocio debe reconfirmar el cambio
-    appt.reminder_sent = False                # recibirá un recordatorio para la hora nueva
-    link.reschedule_count += 1
-    db.commit()
+        appt.start_at = new_start
+        appt.end_at = new_start + timedelta(minutes=appt.service.duration_min)
+        appt.status = models.STATUS_PENDING       # el negocio debe reconfirmar el cambio
+        appt.reminder_sent = False                # recibirá un recordatorio para la hora nueva
+        link.reschedule_count += 1
+        db.commit()
     db.refresh(appt)
     return appt
 

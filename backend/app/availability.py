@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import calendar
+import threading
 from datetime import date, datetime, time, timedelta
 from typing import Optional
 
@@ -13,6 +14,11 @@ from .utils import local_now
 
 REASON_PAST = "past"
 REASON_BOOKED = "booked"
+
+# Comprobar disponibilidad e insertar debe ser atómico: sin esto, 20 reservas
+# simultáneas a la misma franja creaban hasta 15 citas (QA-06). Serializa dentro de
+# un proceso (la app corre con un solo worker, igual que el programador de recordatorios).
+booking_lock = threading.Lock()
 
 
 def _overlaps(a_start: datetime, a_end: datetime, b_start: datetime, b_end: datetime) -> bool:
