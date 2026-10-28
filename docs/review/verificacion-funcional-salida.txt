@@ -1,0 +1,22 @@
+# Verificación funcional en navegador (Playwright + Chromium headless)
+# Código: 5c8a83c docs: nombres del equipo en la entrega, el reporte de QA y el AI Log
+# Fecha: 2026-10-28 16:59 -05
+# Comando: python docs/review/scripts/verificacion_funcional.py docs/review/capturas
+
+[PASA ] instalación del propietario — 200
+[PASA ] crear servicio con HTML en el nombre — 201
+[PASA ] R-1 QA-03: el nombre con HTML se muestra como texto
+[PASA ] R-1 QA-03: el código del nombre no se ejecuta — __xss=False, <img> en la grilla=0
+[PASA ] reserva de prueba para mañana 10:00 — 201
+[PASA ] R-2 el enlace de la confirmación abre la cita
+[PASA ] disparar recordatorios desde el panel — {"candidatas":3,"enviados":3}
+[PASA ] R-2 QA-02: el recordatorio trae enlace
+[PASA ] R-2 QA-02: el enlace del recordatorio abre la cita
+[PASA ] R-2 QA-02: el enlace de la confirmación ya no sirve — CitaFácil Este enlace ya no es válido  Puede que la cita haya sido cancelada o que el enla
+[PASA ] R-4 el panel abre con la sesión del dueño
+[PASA ] R-4 QA-03 en el panel: el nombre con HTML se ve como texto
+[FALLA] R-3 móvil 390 px sin desborde horizontal: index — ancho del contenido=425px
+[PASA ] R-3 móvil 390 px sin desborde horizontal: autogestion — ancho del contenido=390px
+[PASA ] R-3 móvil 390 px sin desborde horizontal: admin-login — ancho del contenido=390px
+
+TOTAL: 14 pasan, 1 fallan

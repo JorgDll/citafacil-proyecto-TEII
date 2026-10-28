@@ -195,7 +195,11 @@ Leyenda: ✅ cumple · ⚠️ cumple con observación · ❌ no cumple (antes de
 | HU-6 | 5 fallos y luego la clave correcta | 429 ✅ |
 | Frontend | Uso de `innerHTML` con datos del servidor | **`service.name` sin escapar → QA-03** |
 
-## 8. Pendiente de verificación manual en el navegador
+## 8. Verificación en el navegador
+
+> **Actualización:** se hizo con Playwright y Chromium; ver [`docs/review/Revision-Reviewer.md`](../review/Revision-Reviewer.md). Los tres puntos de abajo pasan, salvo el desborde de la página pública en móvil (R-02, que ya existía).
+
+Puntos que estaban pendientes:
 
 El developer ya probó en el navegador los flujos principales de cada HU. Quedan para el reviewer o para la demo:
 - La página pública con un servicio llamado `<img src=x onerror=alert(1)>` debe mostrar el texto sin ejecutarlo (QA-03).

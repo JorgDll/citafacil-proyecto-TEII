@@ -42,6 +42,7 @@ Registro del uso de IA durante el sprint, en el formato que pide el enunciado. C
 | 22 | Evidencia QA | Claude Code (Opus) | Scripts reproducibles y salidas guardadas | `docs/qa/evidencia/`: pytest, exploratorias y concurrencia, antes y después | Aceptado. Al generarla, la IA creyó que faltaba la confirmación en la auditoría, pero era su script: las citas del `seed` ya vienen confirmadas (§2, caso K) |
 | 23 | Riesgos | Claude Code (Opus) | Registrar los riesgos menores | [Issue #1](https://github.com/JorgDll/citafacil-proyecto-TEII/issues/1) con QA-06 (varios workers) y QA-07 a QA-11 | Aceptado: se atienden en el siguiente sprint (ver §6) |
 | 24 | Revisión | Claude Code (Opus) | Abrir el PR y dejar la revisión de QA | [PR #2](https://github.com/JorgDll/citafacil-proyecto-TEII/pull/2) con una [revisión](https://github.com/JorgDll/citafacil-proyecto-TEII/pull/2#pullrequestreview-5690040938) de 12 comentarios en línea | Aceptado; la aprobación final queda para el reviewer humano |
+| 25 | Revisión funcional | Claude Code (Opus) + Playwright | Verificar en un navegador lo pendiente del reporte (§8) y preparar el paquete del reviewer | 15 comprobaciones y 9 capturas: 14 pasan; R-02 (desborde en móvil) falla. Hallazgos visuales R-01 y R-02 | **Pendiente de la decisión del reviewer** (Eriel Tensu), que revisa sin IA y decide los cambios (`docs/review/Revision-Reviewer.md` §4) |
 
 ---
 
@@ -59,6 +60,7 @@ Registro del uso de IA durante el sprint, en el formato que pide el enunciado. C
 | **H** | Sesión de QA | La IA intentó instalar las dependencias con el Python 3.14 del sistema, incompatible con las versiones fijadas | Error de compilación de `pydantic-core` y `psycopg2-binary` | Entorno con Python 3.12 y README corregido (QA-05) |
 | **I** | Sesión de QA | Con **una sola** ronda de 20 reservas simultáneas (1 creada, 19 rechazadas), la IA concluyó que no había doble reserva y lo dejó como "riesgo para PostgreSQL" en el reporte entregado | Al repetir la prueba para la evidencia, una ronda creó 3 citas; con 20 rondas, 15 tenían doble reserva | QA-06 pasa a severidad alta y se corrige. Lección: una carrera no se descarta con una sola ejecución |
 | **J** | Sesión de QA | El primer test de QA-06 usaba una sola ronda y **pasó una vez contra el código con bug** (falso negativo). Antes, otra versión fallaba por arrancar el programador de recordatorios en cada hilo (`with TestClient`) | Al generar la evidencia 02 | 5 rondas por test y clientes sin ciclo de vida |
+| **L** | Revisión funcional | El script de navegador tomaba el último enlace del log (de otra cita) y medía el desborde contra `innerWidth`, que en móvil crece con el contenido, lo que ocultaba R-02 | Un caso falló sin motivo y el ancho «pasaba» con 425 px | Buscar el mensaje del cliente concreto y comparar contra el ancho fijo del viewport |
 | **K** | Sesión de QA | La IA creyó que la auditoría no registraba la confirmación de la recepcionista | La cita elegida ya estaba `confirmed` en el `seed`, así que no hubo cambio que registrar (comportamiento correcto) | Se corrigió el script para elegir una cita `pending` y comprobar que la acción quede registrada |
 
 ## 3. Cambios de la IA que se rechazaron o modificaron
@@ -89,6 +91,7 @@ Registro del uso de IA durante el sprint, en el formato que pide el enunciado. C
 | HU-6 | **Aceptar la sesión en cookie `HttpOnly` en vez de JWT.** Un XSS no puede robarla y se revoca al instante al desactivar un usuario | QA |
 | HU-5 | Al llegar el recordatorio, el enlace de la confirmación deja de servir (vale el del último mensaje) | QA |
 | General | Ante la salida del developer, QA corrige los hallazgos y prepara el PR | Equipo |
+| Revisión | El reviewer (Eriel Tensu) revisa sin herramienta de IA: la IA prepara la verificación y el checklist, y él decide los cambios y aprueba | Equipo |
 | General | QA-06 se corrige antes del PR porque incumple el criterio 4 de HU-5; QA-06 con varios workers y QA-07 a QA-10 quedan en un issue para el siguiente sprint | QA |
 
 ## 5. Métricas del uso de IA
@@ -101,7 +104,7 @@ Registro del uso de IA durante el sprint, en el formato que pide el enunciado. C
 | Bugs en código generado por la IA, detectados por sus propios tests | 1 (caso A) |
 | Bugs que pasaron la etapa de desarrollo y detectó QA | 4 (QA-01, QA-02, QA-03, QA-06) |
 | Tests generados por la IA que estaban mal | 4 (caso B) + 2 dependientes del entorno (caso C) |
-| Conclusiones incorrectas de la IA corregidas | 6 (casos D, E, F, I, J, K) |
+| Conclusiones incorrectas de la IA corregidas | 7 (casos D, E, F, I, J, K, L) |
 
 ## 6. Riesgos abiertos (issue de GitHub)
 
