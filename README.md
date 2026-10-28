@@ -77,7 +77,8 @@ citafacil/
 │   ├── scheduler.js / .css   # Calendario y franjas compartidos
 │   ├── admin.html            # Panel de administración
 │   └── admin-staff.js        # Usuarios, permisos y actividad del panel
-├── docs/                     # Documentación (Proyect-doc.md, historias de usuario, QA, AI Log)
+├── docs/                     # Documentación (Proyect-doc.md, historias de usuario, QA, revisión, presentación, AI Log)
+├── ENTREGA.md                # Índice de entrega: restricciones del enunciado y su evidencia
 ├── render.yaml               # Despliegue en Render (API + PostgreSQL)
 └── README.md
 ```

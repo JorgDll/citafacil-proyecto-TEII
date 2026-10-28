@@ -42,7 +42,9 @@ citafacil/
 ├── frontend/ (index.html, manage.html, scheduler.js, scheduler.css,
 │              admin.html, admin-staff.js)
 ├── render.yaml
-├── docs/ (Proyect-doc.md, AI-Development-Log.md, historias-de-usuario/, qa/)
+├── ENTREGA.md
+├── docs/ (Proyect-doc.md, AI-Development-Log.md, historias-de-usuario/,
+│          qa/, review/, presentacion/)
 └── README.md
 ```
 
@@ -247,4 +249,7 @@ Ejecutar: `cd backend; python -m pytest`.
 
 - `docs/historias-de-usuario/`: `HU-v2.md` y, por cada HU, `Plan-HU-N.md` y `Resultado-HU-N.md`.
 - `docs/qa/`: `Reporte-QA.md` (hallazgos QA-01 a QA-11 y validación de cada HU), `Pull-Request.md` y `evidencia/` (salidas de pytest, scripts y capturas).
+- `docs/review/`: `Revision-Reviewer.md` (checklist y decisión del reviewer), `capturas/`, `scripts/verificacion_funcional.py` y su salida.
+- `docs/presentacion/`: guion de las 12 diapositivas.
+- `ENTREGA.md`: índice que enlaza cada restricción del enunciado con su evidencia.
 - `docs/AI-Development-Log.md`: uso de la IA, respuestas incorrectas, cambios rechazados y decisiones humanas.
