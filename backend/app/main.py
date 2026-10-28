@@ -15,7 +15,7 @@ from . import __version__
 from .config import settings
 from .database import Base, engine
 from .reminders import run_reminders_job
-from .routers import admin, analytics, device, manage, public, scores
+from .routers import admin, analytics, audit_log, device, manage, public, scores, staff_auth, users
 
 logging.basicConfig(
     level=logging.INFO,
@@ -76,6 +76,9 @@ app.include_router(scores.router)
 app.include_router(device.router)
 app.include_router(analytics.router)
 app.include_router(manage.router)
+app.include_router(staff_auth.router)
+app.include_router(users.router)
+app.include_router(audit_log.router)
 
 # Frontend servido desde el mismo origen que la API (necesario para la cookie
 # HttpOnly del dispositivo recordado). Abrir: http://localhost:8000/app/

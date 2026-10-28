@@ -86,11 +86,8 @@ def test_reject_invalid_phone_on_booking():
 
 
 # ---------- Administración ----------
-def test_admin_auth():
-    assert client.get("/api/admin/appointments").status_code == 422  # falta cabecera
-    assert client.get(
-        "/api/admin/appointments", headers={"X-Admin-Token": "malo"}
-    ).status_code == 401  # token incorrecto
-    assert client.get(
-        "/api/admin/appointments", headers={"X-Admin-Token": "test-token"}
-    ).status_code == 200  # correcto
+def test_admin_auth(staff_client):
+    # HU-6: ya no hay token compartido; hace falta una sesión de usuario.
+    assert client.get("/api/admin/appointments").status_code == 401                          # sin sesión
+    assert client.get("/api/admin/appointments", headers={"X-Admin-Token": "test-token"}).status_code == 401
+    assert staff_client("dueno").get("/api/admin/appointments").status_code == 200           # con sesión

@@ -229,6 +229,102 @@ class ForecastOut(BaseModel):
     forecast: list[ForecastPoint]
 
 
+# ---------- Cuentas del panel y actividad (HU-6) ----------
+import re as _re  # noqa: E402
+
+_USERNAME_RE = _re.compile(r"^[a-z0-9._-]{3,32}$")
+
+
+def _clean_username(v: str) -> str:
+    v = (v or "").strip().lower()
+    if not _USERNAME_RE.match(v):
+        raise ValueError("Usuario inválido: 3 a 32 caracteres entre letras minúsculas, números, punto, guion y guion bajo.")
+    return v
+
+
+class LoginIn(BaseModel):
+    username: str = Field(..., max_length=64)
+    password: str = Field(..., max_length=200)
+
+
+class SetupIn(BaseModel):
+    setup_token: str = Field(..., max_length=200)
+    username: str
+    display_name: str = Field(..., min_length=2, max_length=80)
+    password: str = Field(..., max_length=200)
+
+    @field_validator("username")
+    @classmethod
+    def _username(cls, v: str) -> str:
+        return _clean_username(v)
+
+
+class PasswordChangeIn(BaseModel):
+    current_password: str = Field(..., max_length=200)
+    new_password: str = Field(..., max_length=200)
+
+
+class ResetPasswordIn(BaseModel):
+    new_password: str = Field(..., max_length=200)
+
+
+class MeOut(BaseModel):
+    id: int
+    username: str
+    display_name: str
+    role: str
+    role_label: str
+    permissions: list[str]
+    must_change_password: bool
+
+
+class StaffUserOut(MeOut):
+    active: bool
+    locked: bool
+    created_at: datetime
+    last_login_at: Optional[datetime] = None
+
+
+class StaffUserCreate(BaseModel):
+    username: str
+    display_name: str = Field(..., min_length=2, max_length=80)
+    role: str
+    permissions: Optional[list[str]] = None      # None = los del rol
+    password: str = Field(..., max_length=200)
+
+    @field_validator("username")
+    @classmethod
+    def _username(cls, v: str) -> str:
+        return _clean_username(v)
+
+
+class StaffUserUpdate(BaseModel):
+    display_name: Optional[str] = Field(None, min_length=2, max_length=80)
+    role: Optional[str] = None
+    permissions: Optional[list[str]] = None
+    active: Optional[bool] = None
+
+
+class AuditItemOut(BaseModel):
+    id: int
+    created_at: datetime
+    actor_type: str
+    user_id: Optional[int] = None
+    actor_name: str
+    action: str
+    entity: str
+    entity_id: Optional[int] = None
+    detail: dict
+    ip: str
+
+
+class AuditPageOut(BaseModel):
+    total: int
+    limit: int
+    offset: int
+    items: list[AuditItemOut]
+
+
 # ---------- Otros ----------
 class CountryOut(BaseModel):
     iso: str

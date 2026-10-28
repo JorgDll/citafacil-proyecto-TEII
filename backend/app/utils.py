@@ -89,6 +89,15 @@ def phone_parts(e164: str) -> tuple[Optional[str], str]:
     return phonenumbers.region_code_for_number(number), phonenumbers.national_significant_number(number)
 
 
+def mask_phone(e164: str) -> str:
+    """'+50761234567' -> '+507 ****4567' (para quien no puede ver teléfonos completos)."""
+    try:
+        number = phonenumbers.parse(e164, None)
+        return f"+{number.country_code} ****{str(number.national_number)[-4:]}"
+    except NumberParseException:
+        return "****" + (e164 or "")[-4:]
+
+
 @lru_cache(maxsize=1)
 def list_countries() -> tuple[dict, ...]:
     """Países soportados: ISO, código de marcación y un móvil de ejemplo (sin el código)."""

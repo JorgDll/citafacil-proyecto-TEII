@@ -92,6 +92,23 @@
   .an-filters .field{margin:0;min-width:140px}
   .chart-box{position:relative;height:340px}
   .an-note{color:var(--muted);font-size:.82rem;margin-top:12px}
+  .who{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted)}
+  .who b{color:var(--text)}
+  .link-btn{background:none;border:none;color:var(--accent-2);font:inherit;font-size:.85rem;font-weight:600;cursor:pointer;padding:0}
+  .msg-err{color:var(--err);font-size:.85rem;margin-top:12px}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);display:none;align-items:flex-start;
+    justify-content:center;padding:30px 16px;z-index:60;overflow-y:auto}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;max-width:520px;width:100%;box-shadow:var(--shadow)}
+  .modal h3{font-size:1.15rem;margin-bottom:14px}
+  .modal .actions{margin-top:16px;justify-content:flex-end}
+  .perm-grid{display:grid;gap:8px;margin:6px 0 4px}
+  .perm{display:flex;align-items:flex-start;gap:10px;font-size:.88rem;color:var(--text);cursor:pointer;margin:0}
+  .perm input{width:auto;margin-top:5px}
+  .perm.off{opacity:.55;cursor:not-allowed}
+  .b-neutral{background:rgba(154,167,180,.14);color:var(--muted)}
+  .pager{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;color:var(--muted);font-size:.85rem}
+  td.detail{color:var(--muted);font-size:.85rem;max-width:340px}
   .hide{display:none!important}
   @media(max-width:680px){ .add-svc{grid-template-columns:1fr 1fr}; table{font-size:.82rem}; th:nth-child(3),td:nth-child(3){display:none} }
 </style>
@@ -103,7 +120,9 @@
       <div class="brand"><i class="fa-solid fa-calendar-check"></i> CitaFácil <span style="color:var(--muted);font-weight:600;font-size:.85rem">· Admin</span></div>
       <div class="nav-right">
         <a href="index.html"><i class="fa-solid fa-arrow-left"></i> Ver página de reservas</a>
-        <button id="logoutBtn" class="hide" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
+        <span class="who hide" id="whoBox"><i class="fa-solid fa-circle-user"></i> <b id="whoName"></b> <span class="badge b-confirmed" id="whoRole"></span></span>
+        <button id="pwBtn" class="hide" onclick="showPassword(false)"><i class="fa-solid fa-key"></i> Contraseña</button>
+        <button id="logoutBtn" class="hide" onclick="doLogout()"><i class="fa-solid fa-right-from-bracket"></i> Salir</button>
       </div>
     </nav>
   </div>
@@ -113,11 +132,39 @@
   <div class="wrap">
 
     <!-- LOGIN -->
-    <div id="loginView" class="card login">
-      <h2><i class="fa-solid fa-lock"></i> Acceso administrador</h2>
-      <div class="field"><label for="tokenInput">Token de administrador</label><input id="tokenInput" type="password" placeholder="Tu ADMIN_TOKEN" /></div>
+    <div id="loginView" class="card login hide">
+      <h2><i class="fa-solid fa-lock"></i> Acceso al panel</h2>
+      <div class="field"><label for="userInput">Usuario</label><input id="userInput" autocomplete="username" autocapitalize="off" spellcheck="false" /></div>
+      <div class="field"><label for="passInput">Contraseña</label><input id="passInput" type="password" autocomplete="current-password" /></div>
       <button class="btn" id="loginBtn" style="width:100%"><i class="fa-solid fa-unlock"></i> Entrar</button>
-      <div id="loginMsg" style="color:var(--err);font-size:.85rem;margin-top:12px;display:none"></div>
+      <div id="loginMsg" class="msg-err hide"></div>
+    </div>
+
+    <!-- INSTALACIÓN: primer propietario -->
+    <div id="setupView" class="card login hide">
+      <h2><i class="fa-solid fa-user-shield"></i> Crear al propietario</h2>
+      <p style="color:var(--muted);font-size:.88rem;margin-bottom:16px">Aún no hay usuarios. Crea la cuenta del propietario con la clave de instalación (<code>ADMIN_TOKEN</code> de tu archivo <code>.env</code>). Después esa clave ya no abre el panel.</p>
+      <div class="field"><label for="suToken">Clave de instalación (ADMIN_TOKEN)</label><input id="suToken" type="password" autocomplete="off" /></div>
+      <div class="field"><label for="suName">Tu nombre</label><input id="suName" autocomplete="name" /></div>
+      <div class="field"><label for="suUser">Usuario</label><input id="suUser" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="ej: propietario" /></div>
+      <div class="field"><label for="suPass">Contraseña (mínimo 10 caracteres)</label><input id="suPass" type="password" autocomplete="new-password" /></div>
+      <div class="field"><label for="suPass2">Repite la contraseña</label><input id="suPass2" type="password" autocomplete="new-password" /></div>
+      <button class="btn" id="suBtn" style="width:100%"><i class="fa-solid fa-check"></i> Crear propietario y entrar</button>
+      <div id="suMsg" class="msg-err hide"></div>
+    </div>
+
+    <!-- CAMBIO DE CONTRASEÑA (obligatorio en el primer acceso) -->
+    <div id="pwView" class="card login hide">
+      <h2><i class="fa-solid fa-key"></i> Cambiar contraseña</h2>
+      <p id="pwNote" style="color:var(--muted);font-size:.88rem;margin-bottom:16px"></p>
+      <div class="field"><label for="pwCur">Contraseña actual</label><input id="pwCur" type="password" autocomplete="current-password" /></div>
+      <div class="field"><label for="pwNew">Contraseña nueva (mínimo 10 caracteres)</label><input id="pwNew" type="password" autocomplete="new-password" /></div>
+      <div class="field"><label for="pwNew2">Repite la contraseña nueva</label><input id="pwNew2" type="password" autocomplete="new-password" /></div>
+      <div class="actions" style="display:flex;gap:10px">
+        <button class="btn" id="pwSave"><i class="fa-solid fa-check"></i> Guardar</button>
+        <button class="btn ghost" id="pwCancel">Cancelar</button>
+      </div>
+      <div id="pwMsg" class="msg-err hide"></div>
     </div>
 
     <!-- DASHBOARD -->
@@ -164,7 +211,7 @@
         <p class="an-note" id="anNote"></p>
       </div>
 
-      <div class="card">
+      <div class="card" id="cardAppts">
         <h2><i class="fa-solid fa-list-check"></i> Reservas</h2>
         <div class="toolbar">
           <div class="field"><label for="fDate">Fecha</label><input type="date" id="fDate" /></div>
@@ -179,7 +226,7 @@
           </div>
           <button class="btn ghost sm" onclick="loadAppointments()"><i class="fa-solid fa-rotate"></i> Actualizar</button>
           <button class="btn ghost sm" onclick="clearFilters()">Limpiar</button>
-          <button class="btn sm" id="remindBtn" onclick="runReminders()"><i class="fa-brands fa-whatsapp"></i> Enviar recordatorios</button>
+          <button class="btn sm hide" id="remindBtn" onclick="runReminders()"><i class="fa-brands fa-whatsapp"></i> Enviar recordatorios</button>
         </div>
         <div style="overflow-x:auto">
           <table>
@@ -189,16 +236,17 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="cardSvcs">
         <h2><i class="fa-solid fa-scissors"></i> Servicios</h2>
         <div id="svcList"></div>
-        <div class="add-svc">
+        <div class="add-svc" id="addSvcForm">
           <div class="field" style="margin:0"><label>Nombre</label><input id="nsName" placeholder="Ej: Corte de pelo" /></div>
           <div class="field" style="margin:0"><label>Duración (min)</label><input id="nsDur" type="number" value="30" min="5" step="5" /></div>
           <div class="field" style="margin:0"><label>Precio (CLP)</label><input id="nsPrice" type="number" value="8000" min="0" step="500" /></div>
           <button class="btn sm" onclick="addService()"><i class="fa-solid fa-plus"></i> Agregar</button>
         </div>
       </div>
+      <div id="staffMount"></div>
     </div>
 
   </div>
@@ -206,6 +254,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="admin-staff.js"></script>
 <script>
   /* ====== CONFIG ====== */
   const DEFAULT_API = location.protocol.startsWith("http") ? location.origin : "https://citafacil-api.onrender.com";
@@ -215,16 +264,28 @@
 
   const $ = id => document.getElementById(id);
   const money = n => "$" + (n||0).toLocaleString("es-CL");
-  let TOKEN = localStorage.getItem("citafacil_token") || "";
+  // HU-6: la sesión va en una cookie HttpOnly (el navegador la envía sola). El antiguo
+  // token compartido ya no existe: se borra el que pudiera haber quedado guardado.
+  try{ localStorage.removeItem("citafacil_token"); }catch(e){}
+  let ME = null;                                           // usuario de la sesión (/api/admin/auth/me)
+  const can = p => !!(ME && ME.permissions.includes(p));
+  const canAny = (...ps) => ps.some(can);
+  // Escapa texto que viene de clientes o del servidor antes de ponerlo en innerHTML.
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
   function toast(msg, kind){ const t=$("toast"); t.textContent=msg; t.className="toast "+(kind||""); t.style.display="block"; setTimeout(()=>t.style.display="none", 2800); }
 
   async function api(path, opts){
     opts = opts || {};
-    opts.headers = Object.assign({"X-Admin-Token": TOKEN}, opts.headers||{});
+    opts.credentials = "same-origin";
+    opts.headers = Object.assign({"X-Requested-With": "citafacil"}, opts.headers||{});   // defensa CSRF
     const r = await fetch(API + path, opts);
-    if(r.status===401 || r.status===422 && path.startsWith("/api/admin")){ /* handled by caller */ }
-    if(!r.ok){ let d; try{d=await r.json()}catch(e){}; const err=new Error((d&&d.detail)||("Error "+r.status)); err.status=r.status; throw err; }
+    if(!r.ok){
+      let d; try{d=await r.json()}catch(e){}
+      let msg = d && d.detail;
+      if(Array.isArray(msg)) msg = msg.map(x=>String(x.msg||"").replace(/^Value error, /,"")).filter(Boolean).join(" · ");
+      const err = new Error(msg || ("Error "+r.status)); err.status = r.status; throw err;
+    }
     return r.status===204 ? null : r.json();
   }
 
@@ -383,37 +444,98 @@
                 scales:{ y:{ beginAtZero:true }, x:{ ticks:{ maxTicksLimit:14 } } } } });
   }
 
-  /* ====== LOGIN ====== */
-  $("loginBtn").addEventListener("click", doLogin);
-  $("tokenInput").addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
+  /* ====== ACCESO (HU-6) ====== */
+  const views = ["loginView","setupView","pwView","dashView"];
+  const showView = id => views.forEach(v=>$(v).classList.toggle("hide", v!==id));
+  const showMsg = (id, text) => { const e=$(id); e.textContent = text; e.classList.toggle("hide", !text); };
+  const post = (path, body) => api(path, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
 
-  async function doLogin(){
-    const t = $("tokenInput").value.trim();
-    if(!t){ return; }
-    TOKEN = t;
+  $("loginBtn").addEventListener("click", doLogin);
+  ["userInput","passInput"].forEach(id=>$(id).addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); }));
+  $("suBtn").addEventListener("click", doSetup);
+  $("pwSave").addEventListener("click", doChangePassword);
+  ["pwCur","pwNew","pwNew2"].forEach(id=>$(id).addEventListener("keydown", e=>{ if(e.key==="Enter") doChangePassword(); }));
+
+  async function boot(){
     try{
-      await api("/api/admin/stats");
-      localStorage.setItem("citafacil_token", TOKEN);
-      showDash();
-    }catch(e){
-      $("loginMsg").style.display="block";
-      $("loginMsg").textContent = e.status===401 ? "Token incorrecto." : ("No se pudo conectar: "+e.message+" (API: "+API+")");
-    }
+      const st = await api("/api/admin/auth/setup-status");
+      if(st.needs_setup){ showView("setupView"); return; }
+    }catch(e){ showView("loginView"); showMsg("loginMsg", "No se pudo conectar: "+e.message+" (API: "+API+")"); return; }
+    try{ enter(await api("/api/admin/auth/me")); }
+    catch(e){ showView("loginView"); $("userInput").focus(); }
   }
 
-  function logout(){ localStorage.removeItem("citafacil_token"); TOKEN=""; location.reload(); }
+  async function doLogin(){
+    const username = $("userInput").value.trim(), password = $("passInput").value;
+    if(!username || !password) return;
+    showMsg("loginMsg", "");
+    try{ enter(await post("/api/admin/auth/login", {username, password})); $("passInput").value = ""; }
+    catch(e){ showMsg("loginMsg", e.message); }
+  }
+
+  async function doSetup(){
+    const pass = $("suPass").value;
+    if(pass !== $("suPass2").value){ showMsg("suMsg", "Las contraseñas no coinciden."); return; }
+    showMsg("suMsg", "");
+    try{
+      enter(await post("/api/admin/auth/setup", {setup_token:$("suToken").value, display_name:$("suName").value.trim(),
+                                                   username:$("suUser").value.trim(), password:pass}));
+      ["suToken","suPass","suPass2"].forEach(id=>$(id).value = "");
+    }catch(e){ showMsg("suMsg", e.message); }
+  }
+
+  function enter(me){
+    ME = me;
+    $("whoName").textContent = me.display_name; $("whoRole").textContent = me.role_label;
+    ["whoBox","pwBtn","logoutBtn"].forEach(id=>$(id).classList.remove("hide"));
+    if(me.must_change_password){ showPassword(true); return; }
+    showDash();
+  }
+
+  function showPassword(forced){
+    $("pwNote").textContent = forced
+      ? "Entraste con una contraseña temporal. Elige una propia para continuar."
+      : "Al cambiarla se cerrarán tus sesiones en otros dispositivos.";
+    $("pwCancel").classList.toggle("hide", forced);
+    ["pwCur","pwNew","pwNew2"].forEach(id=>$(id).value = ""); showMsg("pwMsg", "");
+    showView("pwView"); $("pwCur").focus();
+  }
+  $("pwCancel").addEventListener("click", ()=>showDash());
+
+  async function doChangePassword(){
+    if($("pwNew").value !== $("pwNew2").value){ showMsg("pwMsg", "Las contraseñas nuevas no coinciden."); return; }
+    showMsg("pwMsg", "");
+    try{
+      enter(await post("/api/admin/auth/password", {current_password:$("pwCur").value, new_password:$("pwNew").value}));
+      toast("Contraseña actualizada", "ok");
+    }catch(e){ showMsg("pwMsg", e.message); }
+  }
+
+  async function doLogout(){ try{ await post("/api/admin/auth/logout", {}); }catch(e){} location.reload(); }
+  // La sesión se perdió (venció, la revocaron o desactivaron la cuenta): volver a la pantalla de acceso.
+  function logout(){ location.reload(); }
 
   function showDash(){
-    $("loginView").classList.add("hide");
-    $("dashView").classList.remove("hide");
-    $("logoutBtn").classList.remove("hide");
+    showView("dashView");
+    // Cada tarjeta solo se muestra con su permiso (el servidor es quien lo hace cumplir).
+    $("stats").classList.toggle("hide", !can("appointments.view"));
+    $("cardAppts").classList.toggle("hide", !can("appointments.view"));
+    $("cardSvcs").classList.toggle("hide", !canAny("appointments.view","services.manage","analytics.view") );
+    $("addSvcForm").classList.toggle("hide", !can("services.manage"));
+    $("remindBtn").classList.toggle("hide", !can("reminders.run"));
+    $("analyticsCard").classList.toggle("hide", !can("analytics.view"));
     refreshAll();
-    initAnalytics();
+    if(can("analytics.view")) initAnalytics();
+    initStaff();
   }
 
   /* ====== DATA ====== */
   async function refreshAll(){
-    await Promise.all([loadStats(), loadAppointments(), loadServices()]);
+    await Promise.all([
+      can("appointments.view") ? loadStats() : null,
+      can("appointments.view") ? loadAppointments() : null,
+      canAny("appointments.view","services.manage","analytics.view") ? loadServices() : null,
+    ]);
     if(an.ready) loadAnalytics();   // las reservas cambian los conteos
   }
 
@@ -441,18 +563,20 @@
       list.forEach(a=>{
         const tr=document.createElement("tr");
         const svc = a.service ? a.service.name : ("#"+a.service_id);
-        tr.innerHTML = `<td class="mono">${fmtDT(a.start_at)}</td><td>${a.customer_name}</td>
-          <td class="mono">${a.customer_phone}</td><td>${svc}</td>
-          <td><span class="badge b-${a.status}">${STLABEL[a.status]||a.status}</span></td>
-          <td><div class="actions">
-            <button class="ico ok" title="Confirmar" onclick="setStatus(${a.id},'confirmed')"><i class="fa-solid fa-check"></i></button>
-            <button class="ico ok" title="Marcar realizada" onclick="setStatus(${a.id},'done')"><i class="fa-solid fa-flag-checkered"></i></button>
-            <button class="ico warn" title="Cancelar" onclick="setStatus(${a.id},'cancelled')"><i class="fa-solid fa-ban"></i></button>
-            <button class="ico del" title="Eliminar" onclick="delAppt(${a.id})"><i class="fa-solid fa-trash"></i></button>
-          </div></td>`;
+        const acts = [];
+        if(can("appointments.confirm")){
+          acts.push(`<button class="ico ok" title="Confirmar" onclick="setStatus(${Number(a.id)},'confirmed')"><i class="fa-solid fa-check"></i></button>`);
+          acts.push(`<button class="ico ok" title="Marcar realizada" onclick="setStatus(${Number(a.id)},'done')"><i class="fa-solid fa-flag-checkered"></i></button>`);
+        }
+        if(can("appointments.cancel")) acts.push(`<button class="ico warn" title="Cancelar" onclick="setStatus(${Number(a.id)},'cancelled')"><i class="fa-solid fa-ban"></i></button>`);
+        if(can("appointments.delete")) acts.push(`<button class="ico del" title="Eliminar" onclick="delAppt(${Number(a.id)})"><i class="fa-solid fa-trash"></i></button>`);
+        tr.innerHTML = `<td class="mono">${esc(fmtDT(a.start_at))}</td><td>${esc(a.customer_name)}</td>
+          <td class="mono">${esc(a.customer_phone)}</td><td>${esc(svc)}</td>
+          <td><span class="badge b-${esc(a.status)}">${esc(STLABEL[a.status]||a.status)}</span></td>
+          <td><div class="actions">${acts.join("") || '<span style="color:var(--muted)">—</span>'}</div></td>`;
         body.appendChild(tr);
       });
-    }catch(e){ if(e.status===401){logout();return;} body.innerHTML='<tr><td colspan="6" class="empty">Error: '+e.message+'</td></tr>'; }
+    }catch(e){ if(e.status===401){logout();return;} body.innerHTML='<tr><td colspan="6" class="empty">Error: '+esc(e.message)+'</td></tr>'; }
   }
 
   async function setStatus(id, status){
@@ -474,14 +598,14 @@
       box.innerHTML="";
       list.forEach(s=>{
         const row=document.createElement("div"); row.className="svc-row"+(s.active?"":" inactive");
-        row.innerHTML=`<div class="info"><b>${s.name}</b><span style="color:var(--muted)"><i class="fa-regular fa-clock"></i> ${s.duration_min} min</span><span class="price">${money(s.price)}</span>${s.active?"":'<span class="badge b-cancelled">inactivo</span>'}</div>
-          <div class="actions">
-            <button class="ico warn" title="${s.active?'Desactivar':'Activar'}" onclick="toggleSvc(${s.id},${!s.active})"><i class="fa-solid fa-power-off"></i></button>
-            <button class="ico del" title="Eliminar" onclick="delSvc(${s.id})"><i class="fa-solid fa-trash"></i></button>
-          </div>`;
+        const svcActs = can("services.manage") ? `<div class="actions">
+            <button class="ico warn" title="${s.active?'Desactivar':'Activar'}" onclick="toggleSvc(${Number(s.id)},${!s.active})"><i class="fa-solid fa-power-off"></i></button>
+            <button class="ico del" title="Eliminar" onclick="delSvc(${Number(s.id)})"><i class="fa-solid fa-trash"></i></button>
+          </div>` : "";
+        row.innerHTML=`<div class="info"><b>${esc(s.name)}</b><span style="color:var(--muted)"><i class="fa-regular fa-clock"></i> ${Number(s.duration_min)} min</span><span class="price">${esc(money(s.price))}</span>${s.active?"":'<span class="badge b-cancelled">inactivo</span>'}</div>${svcActs}`;
         box.appendChild(row);
       });
-    }catch(e){ if(e.status===401){logout();return;} box.innerHTML='<div class="empty">Error: '+e.message+'</div>'; }
+    }catch(e){ if(e.status===401){logout();return;} box.innerHTML='<div class="empty">Error: '+esc(e.message)+'</div>'; }
   }
   async function toggleSvc(id, active){
     try{ await api(`/api/admin/services/${id}`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({active})}); loadServices(); }
@@ -510,7 +634,7 @@
   function clearFilters(){ $("fStatus").value=""; $("fDate").value=""; loadAppointments(); }
 
   /* init */
-  if(TOKEN){ showDash(); }
+  boot();
 </script>
 </body>
 </html>

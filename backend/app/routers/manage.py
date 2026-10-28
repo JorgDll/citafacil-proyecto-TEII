@@ -3,10 +3,10 @@ from __future__ import annotations
 
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
-from .. import manage, models, schemas
+from .. import audit, manage, models, schemas
 from ..availability import build_day_slots, month_overview
 from ..config import settings
 from ..database import get_db
@@ -45,10 +45,13 @@ def get_appointment(link: models.AppointmentLink = Depends(manage.current_link))
 @router.post("/cancel", response_model=schemas.MessageOut, summary="Cancelar mi cita (revoca el enlace)")
 def cancel_appointment(
     payload: schemas.CancelIn,
+    request: Request,
     link: models.AppointmentLink = Depends(manage.current_link),
     db: Session = Depends(get_db),
 ):
     appt = manage.cancel(db, link)
+    audit.record(db, audit.Actor.customer(appt.customer_name.split()[0]), "appointment.customer_cancelled",
+                 "appointment", appt.id, {"service": appt.service.name, "start_at": appt.start_at.isoformat(timespec="minutes")}, request)
     send_whatsapp(
         appt.customer_phone,
         cancellation_message(settings.business_name, appt.customer_name, appt.service.name, appt.start_at),
@@ -59,10 +62,15 @@ def cancel_appointment(
 @router.post("/reschedule", response_model=schemas.ManageOut, summary="Reprogramar mi cita")
 def reschedule_appointment(
     payload: schemas.RescheduleIn,
+    request: Request,
     link: models.AppointmentLink = Depends(manage.current_link),
     db: Session = Depends(get_db),
 ):
+    old_start = link.appointment.start_at
     appt = manage.reschedule(db, link, payload.start_at)
+    audit.record(db, audit.Actor.customer(appt.customer_name.split()[0]), "appointment.customer_rescheduled",
+                 "appointment", appt.id, {"service": appt.service.name, "from": old_start.isoformat(timespec="minutes"),
+                                          "to": appt.start_at.isoformat(timespec="minutes")}, request)
     send_whatsapp(
         appt.customer_phone,
         reschedule_message(settings.business_name, appt.customer_name, appt.service.name, appt.start_at),

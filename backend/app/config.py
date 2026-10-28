@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     admin_token: str = "cambia-este-token-admin"
     cors_origins: str = "*"      # separado por comas, o "*" para todos
 
+    # --- Cuentas del panel de administración (HU-6) ---
+    staff_cookie_name: str = "citafacil_admin"
+    session_hours: int = 12             # duración fija de la sesión
+    login_max_attempts: int = 5         # fallos seguidos antes de bloquear la cuenta
+    login_lock_minutes: int = 15
+    password_min_length: int = 10
+
     # --- Autogestión de la cita por el cliente (HU-5) ---
     # URL pública de la app: base del enlace que llega por WhatsApp.
     public_base_url: str = "http://localhost:8000"

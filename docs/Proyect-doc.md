@@ -56,7 +56,8 @@ citafacil/
 | `notifications.py` | Textos de confirmación y recordatorio; `send_whatsapp` (Twilio o demo) |
 | `reminders.py` | `run_reminders` y `run_reminders_job` (cada `REMINDER_POLL_MINUTES`) |
 | `manage.py` | HU-5: `create_link`, `current_link`, `block_reason`, `reschedule`, `cancel` |
-| `auth.py` | `require_admin`: cabecera `X-Admin-Token` contra `ADMIN_TOKEN` |
+| `auth.py` | HU-6: contraseñas (scrypt), sesiones por cookie, `require_permission`/`require_any`, guarda CSRF |
+| `permissions.py` / `audit.py` | HU-6: catálogo de permisos y roles base; registro de actividad |
 | `utils.py` | `normalize_phone` (E.164 internacional, solo móviles), `phone_parts`, `list_countries`, `normalize_cl_phone` (regla chilena lenient, solo para `DEFAULT_COUNTRY=CL`), `local_now`, `to_local_naive` |
 | `routers/public.py` | Endpoints públicos |
 | `routers/admin.py` | Endpoints de administración (router completo protegido) |
@@ -72,7 +73,7 @@ citafacil/
 | GET | `/availability?service_id=&date=` | Horas libres del día |
 | POST | `/appointments` | Crea reserva. 404 servicio inexistente, 409 horario ocupado, 422 teléfono inválido. Envía WhatsApp de confirmación |
 
-### Administración (`/api/admin`, requiere `X-Admin-Token`)
+### Administración (`/api/admin`, requiere sesión y permiso: ver *Cuentas del panel*)
 | Método | Ruta | Descripción |
 |---|---|---|
 | GET / POST | `/services` | Listar todos / crear |
@@ -82,6 +83,22 @@ citafacil/
 | DELETE | `/appointments/{id}` | Eliminar |
 | GET | `/stats` | Contadores por estado y próximas |
 | POST | `/reminders/run` | Ejecutar recordatorios ahora |
+
+### Cuentas del panel (HU-6)
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/api/admin/auth/setup-status` | — | `{needs_setup}` |
+| POST | `/api/admin/auth/setup` | `ADMIN_TOKEN` | Crea al primer propietario (solo con 0 usuarios; 409 después; rechaza el token por defecto) y abre sesión |
+| POST | `/api/admin/auth/login` | — | Cookie `citafacil_admin` (HttpOnly, SameSite=Strict); 401 genérico, 429 si la cuenta está bloqueada |
+| POST | `/api/admin/auth/logout` · `/password` · GET `/me` | sesión | Salir, cambiar contraseña (cierra las demás sesiones), usuario y permisos efectivos |
+| GET/POST | `/api/admin/users` | `users.manage` | Listar / crear (la contraseña temporal obliga a cambiarla) |
+| PATCH | `/api/admin/users/{id}` · POST `/{id}/reset-password` | `users.manage` | Editar rol, permisos, estado / restablecer contraseña |
+| GET | `/api/admin/permissions` | `users.manage` | Catálogo de permisos y roles base |
+| GET | `/api/admin/audit` · `/audit/actors` | `audit.view` | Registro con filtros `user_id`, `action` (exacta o prefijo con `.`), `entity`, `from`, `to`, `limit`, `offset` |
+
+Permisos por ruta: reservas y estadísticas `appointments.view` (teléfonos enmascarados sin `customers.phones`); `PATCH` de estado `appointments.confirm` (confirmed/done/pending) o `appointments.cancel` (cancelled); `DELETE` de reserva `appointments.delete`; servicios `services.manage` (listar basta con `appointments.view`, `services.manage` o `analytics.view`); recordatorios `reminders.run`; análisis `analytics.view`. Sin sesión → 401; sin permiso → 403; sesión con contraseña temporal → 403 hasta cambiarla.
+
+Reglas de cuentas: los usuarios se desactivan, no se borran; siempre debe quedar un propietario activo; nadie se desactiva a sí mismo; quien no es propietario no puede crear ni tocar propietarios ni otorgar permisos que no tiene. Sesiones de `SESSION_HOURS` con vencimiento fijo.
 
 ### Autogestión de la cita (`/api/manage`, HU-5, cabecera `X-Manage-Token`)
 | Método | Ruta | Descripción |
@@ -101,7 +118,7 @@ Token ausente, desconocido o revocado → 404 "Enlace inválido o vencido.". Reg
 
 Validación (`utils.normalize_phone`): solo caracteres de número (sin letras), `phonenumbers.is_valid_number` y tipo `MOBILE` o `FIXED_LINE_OR_MOBILE` (en EE. UU./Canadá la numeración móvil y fija comparte rangos). Con `+` el país sale del número; sin `+` se usa `DEFAULT_COUNTRY` (para `CL` rige la regla anterior). El perfil de dispositivo devuelve además `phone_country` y `phone_national` para repoblar el selector.
 
-### Análisis de demanda (`/api/admin/analytics`, HU-3, requiere `X-Admin-Token`)
+### Análisis de demanda (`/api/admin/analytics`, HU-3, requiere `analytics.view`)
 | Método | Ruta | Descripción |
 |---|---|---|
 | GET | `/services` | Reservas por servicio (barras) |
@@ -135,6 +152,9 @@ Parámetros comunes: `range` (7d, 14d, 30d, 90d, 180d, 365d; por defecto 30d) o 
 ## 6. Modelo de datos
 
 - **services**: `id`, `name`, `duration_min`, `price` (CLP entero), `active`.
+- **staff_users** (HU-6): `username` único, `display_name`, `password_hash` (`scrypt$n$r$p$sal$hash`), `role`, `permissions` (lista separada por comas), `active`, `must_change_password`, `failed_attempts`, `locked_until`, `created_at`, `last_login_at`.
+- **staff_sessions** (HU-6): `user_id`, `token_hash` (SHA-256), `created_at`, `expires_at`. Sin el token en claro.
+- **audit_log** (HU-6): `created_at` (hora local), `actor_type` (`staff`/`customer`/`system`), `user_id`, `actor_name`, `action`, `entity`, `entity_id`, `detail` (JSON sin teléfonos completos), `ip`. Solo se agrega.
 - **appointment_links** (HU-5): `id`, `appointment_id` (único), `token_hash` (SHA-256 hex, único), `reschedule_count`, `created_at`. Una fila por cita creada desde HU-5; se borra al cancelar la cita desde el enlace o al eliminarla el admin. Las citas anteriores no tienen enlace.
 - **appointments**: `id`, `customer_name`, `customer_phone` (E.164), `service_id` (FK), `start_at` / `end_at` (sin zona, hora local del negocio), `status`, `notes`, `reminder_sent`, `created_at` (UTC sin zona).
 - **device_profiles** (HU-1): `id`, `token_hash` (SHA-256 hex, único), `customer_name`, `customer_phone`, `created_at`, `last_used_at`. Una fila por dispositivo; el token en claro solo existe en la cookie `citafacil_device`.
@@ -151,6 +171,7 @@ Parámetros comunes: `range` (7d, 14d, 30d, 90d, 180d, 365d; por defecto 30d) o 
 **Frontend.**
 - Se sirve desde FastAPI en `http://localhost:8000/app/` (mismo origen que la API).
 - URL de la API: `?api=` → `localStorage.citafacil_api` → origen actual (o Render si se abre por `file://`).
+- HU-6: `admin.html` entra con usuario y contraseña (o "Crear al propietario" la primera vez), exige cambiar contraseñas temporales y muestra cada tarjeta solo si hay permiso. `admin-staff.js` aporta las tarjetas **Usuarios y permisos** y **Actividad**. Todo texto de clientes se escapa antes de pintarlo (se corrigió un XSS almacenado con nombres de cliente).
 - HU-5: `manage.html` (enlace personal): detalle de la cita, reprogramar con el calendario compartido y cancelar con un modal que exige escribir "Cancelar cita". El calendario y las franjas viven en `scheduler.js` / `scheduler.css`, compartidos con `index.html`. La tarjeta de éxito de la reserva muestra "Cambiar o cancelar mi cita".
 - HU-4: el celular es un selector de país con búsqueda (`+código | bandera | ISO`, banderas de flag-icons por CDN) más el número nacional; el placeholder cambia con el país y busca por nombre (es/en), ISO o código. Se envía `+<código> <número>`.
 - HU-3: el panel admin tiene la tarjeta "Análisis de demanda" (Chart.js 4.4.1 por CDN) con pestañas Barras, Líneas y Proyección, filtros de rango (presets y fechas libres) y chips de servicios.
@@ -176,7 +197,7 @@ Parámetros comunes: `range` (7d, 14d, 30d, 90d, 180d, 365d; por defecto 30d) o 
 
 `backend/tests/conftest.py` fija la BD temporal (portable a Windows), una configuración independiente de `backend/.env` (país base CL, zona horaria, horario, días cerrados y Twilio vacío) y la fixture `fresh_db`. `backend/tests/test_device_profile.py` (3 tests, HU-1): camino feliz, varios dispositivos sin sobreescribir token, y token inválido/olvidado.
 
-`backend/tests/test_manage.py` (3 tests, HU-5), `backend/tests/test_phone_international.py` (3 tests, HU-4), `backend/tests/test_schedule.py` (3 tests, HU-2) y `backend/tests/test_analytics.py` (4 tests, HU-3).
+`backend/tests/test_staff.py` (4 tests, HU-6), `backend/tests/test_manage.py` (3 tests, HU-5), `backend/tests/test_phone_international.py` (3 tests, HU-4), `backend/tests/test_schedule.py` (3 tests, HU-2) y `backend/tests/test_analytics.py` (4 tests, HU-3).
 
 `backend/tests/test_booking.py` (6 tests): formatos de teléfono válidos e inválidos, creación y conflicto 409, disponibilidad que excluye horas reservadas, rechazo de teléfono inválido (422) y autenticación admin.
 
@@ -190,8 +211,7 @@ Ejecutar: `cd backend; python -m pytest`.
 - **Disponibilidad.** `_booked_that_day` solo considera citas que *empiezan* ese día. El horario es global (sin profesionales ni sucursales) y no hay margen entre citas.
 - **Zona horaria.** Citas en hora local sin zona; `created_at` en UTC. Cuidado al tocar `local_now` o `to_local_naive`.
 - **Seguridad.**
-  - Token admin único y compartido, con valor por defecto público.
-  - Comparación con `!=`, no en tiempo constante.
+  - Panel admin con cuentas individuales, permisos y registro de actividad (HU-6); `ADMIN_TOKEN` solo instala al primer propietario.
   - CORS abierto (`*`).
   - `/api/scores` y `POST /appointments` sin límite de uso ni captcha.
 - **Integridad.** `DELETE /services/{id}` con citas asociadas puede fallar por la clave foránea sin manejo. `PATCH` de estado no valida transiciones.

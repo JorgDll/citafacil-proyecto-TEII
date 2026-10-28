@@ -9,8 +9,8 @@ from app.analytics import forecast_demand
 from app.database import SessionLocal
 from app.main import app
 
-client = TestClient(app)
-AUTH = {"X-Admin-Token": "test-token"}
+client = TestClient(app)                      # sin sesión (para comprobar el acceso)
+admin = {"client": None}                      # cliente con sesión de propietario (lo pone el fixture)
 
 # Reloj congelado: miércoles 4-nov-2026 12:15 -> hoy = 2026-11-04.
 NOW = datetime(2026, 11, 4, 12, 15)
@@ -19,6 +19,11 @@ NOW = datetime(2026, 11, 4, 12, 15)
 @pytest.fixture(autouse=True)
 def frozen_now(monkeypatch):
     monkeypatch.setattr("app.analytics.local_now", lambda: NOW)
+
+
+@pytest.fixture(autouse=True)
+def owner_session(staff_client):
+    admin["client"] = staff_client("dueno", role="owner")
 
 
 @pytest.fixture
@@ -46,7 +51,7 @@ def _add(start: datetime, service_id: int = 1, status: str = models.STATUS_DONE)
 
 
 def _get(path: str, **params):
-    return client.get(f"/api/admin/analytics/{path}", params=params, headers=AUTH)
+    return admin["client"].get(f"/api/admin/analytics/{path}", params=params)
 
 
 def test_happy_path_bars_and_lines_count_requested_services(services):
@@ -101,11 +106,11 @@ def test_edge_range_boundaries_filters_and_validation(services):
     assert _get("services", service_ids="a,b").status_code == 422
     assert _get("trend", range="7d", group_by="year").status_code == 422
 
-    # Sólo administradores.
-    assert client.get("/api/admin/analytics/services").status_code == 422        # sin cabecera
+    # Sólo con sesión y permiso `analytics.view`.
+    assert client.get("/api/admin/analytics/services").status_code == 401        # sin sesión
     assert client.get(
-        "/api/admin/analytics/services", headers={"X-Admin-Token": "malo"}
-    ).status_code == 401
+        "/api/admin/analytics/services", headers={"X-Admin-Token": "test-token"}
+    ).status_code == 401                                                          # el token compartido ya no sirve
 
 
 def test_edge_forecast_keeps_weekly_pattern_and_needs_enough_data():

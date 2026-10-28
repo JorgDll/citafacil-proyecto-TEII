@@ -8,13 +8,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from .. import analytics, schemas
-from ..auth import require_admin
+from ..auth import require_permission
 from ..database import get_db
 
 router = APIRouter(
     prefix="/api/admin/analytics",
     tags=["Análisis"],
-    dependencies=[Depends(require_admin)],
+    dependencies=[Depends(require_permission("analytics.view"))],
 )
 
 

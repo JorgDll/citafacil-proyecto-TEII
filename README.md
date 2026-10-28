@@ -82,14 +82,14 @@ cd backend
 python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-cp .env.example .env          # ajusta ADMIN_TOKEN y lo que quieras
+cp .env.example .env          # cambia ADMIN_TOKEN (clave de instalación) y lo que quieras
 python seed.py                # carga servicios y citas de ejemplo (opcional)
 python -m uvicorn app.main:app --reload
 ```
 
 - API y documentación: <http://localhost:8000/docs>
 - Frontend: <http://localhost:8000/app/> (servido por la API; así funciona la cookie del dispositivo recordado).
-  Panel admin en <http://localhost:8000/app/admin.html> (ingresa tu `ADMIN_TOKEN`).
+  Panel admin en <http://localhost:8000/app/admin.html>: la primera vez pide la clave de instalación (`ADMIN_TOKEN`) para crear al propietario; después se entra con usuario y contraseña (ver *Cuentas del panel*).
 
 > Sin credenciales de Twilio, la app corre en **modo demo**: los mensajes de WhatsApp se registran en el log en vez de enviarse.
 
@@ -110,7 +110,21 @@ python -m uvicorn app.main:app --reload
 | GET  | `/api/admin/stats` | Estadísticas | 🔒 |
 | POST | `/api/admin/reminders/run` | Enviar recordatorios ahora | 🔒 |
 
-🔒 = requiere la cabecera `X-Admin-Token`.
+🔒 = requiere iniciar sesión en el panel y tener el permiso correspondiente (ver *Cuentas del panel*). Desde HU-6 la cabecera `X-Admin-Token` ya no abre la API.
+
+**Cuentas del panel (HU-6)** — cada empleado entra con su usuario y contraseña, y el propietario define qué puede hacer cada uno. Cada acción queda en un registro de actividad.
+
+- **Primer acceso:** mientras no exista ningún usuario, el panel muestra "Crear al propietario" y pide `ADMIN_TOKEN` (cámbialo antes en `.env`). Después ese token ya no abre la API.
+- **Sesión:** cookie `HttpOnly` + `SameSite=Strict`; el servidor guarda solo el SHA-256 del token. Las peticiones que no son GET llevan la cabecera `X-Requested-With: citafacil` (defensa CSRF). Contraseñas con scrypt, bloqueo tras 5 fallos seguidos y cambio de clave obligatorio con contraseñas temporales.
+- **Permisos** (`appointments.view`, `customers.phones`, `appointments.confirm`, `appointments.cancel`, `appointments.delete`, `services.manage`, `analytics.view`, `reminders.run`, `users.manage`, `audit.view`) con roles base ajustables por empleado: Propietario (todo), Gerente (todo menos usuarios), Recepción y Solo consulta. Sin `customers.phones` los teléfonos salen enmascarados (`+507 ****4567`).
+- **Recuperación:** `python manage_users.py list | create-owner <usuario> | reset-password <usuario>` (la contraseña se pide por teclado).
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/admin/auth/setup-status` · POST `/setup` | ¿Falta el propietario? / crearlo con `ADMIN_TOKEN` |
+| POST | `/api/admin/auth/login` · `/logout` · `/password` · GET `/me` | Entrar, salir, cambiar mi contraseña, usuario actual |
+| GET/POST/PATCH | `/api/admin/users` · POST `/{id}/reset-password` · GET `/api/admin/permissions` | Gestión de usuarios y permisos (`users.manage`) |
+| GET | `/api/admin/audit` (+ `/actors`) | Registro de actividad con filtros (`audit.view`); solo lectura |
 
 **Autogestión de la cita (HU-5)** — la confirmación de WhatsApp incluye un enlace personal (`{PUBLIC_BASE_URL}/app/manage.html#t=<token>`) para reprogramar o cancelar sin llamar al negocio. El token va en el fragmento de la URL (no llega a los logs) y el servidor solo guarda su SHA-256. Los endpoints usan la cabecera `X-Manage-Token`. Reglas: hasta `MANAGE_CUTOFF_HOURS` (2) horas antes y máximo `MANAGE_MAX_RESCHEDULES` (2) reprogramaciones. **Cancelar exige escribir "Cancelar cita"** y revoca el enlace (el mismo URL deja de servir); reprogramar devuelve la cita a `pending` para que el negocio la reconfirme.
 
@@ -167,7 +181,10 @@ El frontend ahora se sirve desde la propia API (mismo origen, necesario para la 
 | Variable | Por defecto | Descripción |
 |----------|-------------|-------------|
 | `DATABASE_URL` | `sqlite:///./citafacil.db` | Conexión a la base de datos |
-| `ADMIN_TOKEN` | `cambia-este-token-admin` | Token del panel admin |
+| `ADMIN_TOKEN` | `cambia-este-token-admin` | Clave de instalación: solo crea al primer propietario (el valor por defecto se rechaza) |
+| `SESSION_HOURS` | `12` | Duración de la sesión del panel |
+| `LOGIN_MAX_ATTEMPTS` / `LOGIN_LOCK_MINUTES` | `5` / `15` | Intentos fallidos antes de bloquear la cuenta y minutos de bloqueo |
+| `PASSWORD_MIN_LENGTH` | `10` | Largo mínimo de las contraseñas |
 | `CORS_ORIGINS` | `*` | Dominios permitidos del frontend |
 | `PUBLIC_BASE_URL` | `http://localhost:8000` | Base del enlace de autogestión que se envía por WhatsApp |
 | `MANAGE_CUTOFF_HOURS` / `MANAGE_MAX_RESCHEDULES` | `2` / `2` | Anticipación mínima y reprogramaciones permitidas |
