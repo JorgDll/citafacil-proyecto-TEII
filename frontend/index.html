@@ -270,6 +270,8 @@
   }
 
   const money = n => "$" + (n||0).toLocaleString("es-CL");
+  // Escapa texto del servidor (p. ej. el nombre del servicio) antes de ponerlo en innerHTML.
+  const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
   // fetch con timeout opcional (AbortController) para no colgarse en un arranque en frío.
   async function api(path, opts, timeoutMs){
@@ -534,7 +536,7 @@
     state.services.forEach(s=>{
       const el = document.createElement("div");
       el.className = "svc";
-      el.innerHTML = `<div class="n">${s.name}</div><div class="meta"><span><i class="fa-regular fa-clock"></i> ${s.duration_min} min</span><span class="price">${money(s.price)}</span></div>`;
+      el.innerHTML = `<div class="n">${esc(s.name)}</div><div class="meta"><span><i class="fa-regular fa-clock"></i> ${s.duration_min} min</span><span class="price">${money(s.price)}</span></div>`;
       el.onclick = ()=>selectService(s, el);
       g.appendChild(el);
     });
@@ -551,7 +553,7 @@
       state.time = t;
       const d = new Date(state.date+"T"+t);
       const fecha = d.toLocaleDateString("es-CL",{weekday:"long",day:"2-digit",month:"long"});
-      $("summary").innerHTML = `<b>${state.service.name}</b> · ${fecha} a las <b>${t}</b> · ${money(state.service.price)}`;
+      $("summary").innerHTML = `<b>${esc(state.service.name)}</b> · ${fecha} a las <b>${t}</b> · ${money(state.service.price)}`;
       setStep(3);
       $("cardWho").scrollIntoView({behavior:"smooth", block:"center"});
     }
